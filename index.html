@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parker Compositions — Client Portal</title>
+<link rel="icon" href="assets/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rock+Salt&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#B61311;
+    --black:#000000;
+    --white:#FFFFFF;
+    --grey:#999999;
+    --offblack:#0A0A0A;
+    --cream:#FBFAF8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background-color:var(--grey);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(0,0,0,0.07) 1px, transparent 0);
+    background-size:14px 14px;
+    color:var(--black);
+    font-family:'Poppins',sans-serif;
+    font-weight:400;
+    min-height:100vh;
+  }
+  a{color:inherit;}
+  input, button, select, textarea{
+    font-family:'Poppins',sans-serif;
+  }
+
+  /* ---------- GATE ---------- */
+  #gate{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--black);
+    padding:24px;
+  }
+  .gate-box{
+    max-width:460px;
+    width:100%;
+    text-align:center;
+  }
+  .gate-box h1{
+    font-family:'Rock Salt',cursive;
+    color:var(--white);
+    font-size:clamp(1.3rem,5.5vw,1.9rem);
+    line-height:1.4;
+    margin-bottom:28px;
+  }
+  #gate input{
+    width:100%;
+    padding:14px 16px;
+    border:2px solid var(--red);
+    border-radius:6px;
+    background:var(--black);
+    color:var(--white);
+    font-family:'Poppins',sans-serif;
+    font-size:1rem;
+    margin-bottom:14px;
+    outline:none;
+  }
+  #gate input::placeholder{color:#888;}
+  #gate button{
+    width:100%;
+    padding:14px 16px;
+    border:none;
+    border-radius:6px;
+    background:var(--red);
+    color:var(--white);
+    font-family:'Poppins',sans-serif;
+    font-weight:500;
+    font-size:1rem;
+    letter-spacing:0.03em;
+    cursor:pointer;
+    transition:opacity .2s ease;
+  }
+  #gate button:hover{opacity:0.85;}
+  .remember-wrap{
+    width:100%;
+    text-align:left;
+    margin-bottom:16px;
+  }
+  .remember-row{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    color:#bbb;
+    font-size:0.85rem;
+    font-weight:300;
+    cursor:pointer;
+    user-select:none;
+    white-space:nowrap;
+  }
+  .remember-row span{
+    white-space:nowrap;
+  }
+  @media (max-width:360px){
+    .remember-row{font-size:0.78rem;gap:6px;}
+  }
+  #remember-check{
+    flex:0 0 16px !important;
+    width:16px !important;
+    height:16px !important;
+    margin:0 !important;
+    padding:0 !important;
+    accent-color:var(--red);
+    cursor:pointer;
+  }
+  #gate-error{
+    color:var(--red);
+    font-size:0.85rem;
+    margin-top:12px;
+    min-height:1.2em;
+    font-weight:500;
+  }
+
+  /* ---------- WELCOME OVERLAY ---------- */
+  #welcome-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:var(--black);
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:24px;
+    z-index:999;
+    opacity:0;
+    transition:opacity 0.6s ease;
+  }
+  #welcome-overlay.show{
+    display:flex;
+    opacity:1;
+  }
+  #welcome-overlay.fade-out{
+    opacity:0;
+  }
+  .welcome-inner{
+    display:inline-flex;
+    flex-direction:column;
+    align-items:stretch;
+  }
+  #welcome-text{
+    font-family:'Rock Salt',cursive;
+    color:var(--white);
+    font-size:clamp(1.6rem,6vw,2.6rem);
+    line-height:1.4;
+    white-space:nowrap;
+  }
+  .welcome-swoosh{
+    display:block;
+    width:66%;
+    height:auto;
+    margin:6px auto 0;
+  }
+  #welcome-close{
+    position:absolute;
+    top:20px;
+    right:20px;
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    border:none;
+    background:var(--offblack);
+    color:var(--white);
+    font-size:1.4rem;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background .2s ease;
+  }
+  #welcome-close:hover{background:var(--red);}
+
+  /* ---------- PORTAL ---------- */
+  #portal{display:none;}
+
+  header.hero{
+    position:relative;
+    background:var(--black);
+    color:var(--white);
+    padding:60px 24px 48px;
+    text-align:center;
+    border-bottom:5px solid var(--red);
+  }
+  .search-wrap{
+    position:absolute;
+    top:20px;
+    left:20px;
+    display:flex;
+    align-items:center;
+    z-index:5;
+  }
+  .search-toggle{
+    flex-shrink:0;
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    border:none;
+    background:var(--offblack);
+    color:var(--white);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-size:1rem;
+    transition:background .2s ease;
+  }
+  .search-toggle:hover{background:var(--red);}
+  .signout-toggle{
+    position:absolute;
+    top:20px;
+    right:20px;
+    z-index:5;
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    border:none;
+    background:var(--offblack);
+    color:var(--white);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition:background .2s ease;
+  }
+  .signout-toggle:hover{background:var(--red);}
+  @media (max-width:480px){
+    .signout-toggle{top:14px;right:14px;}
+  }
+  .search-input{
+    width:0;
+    opacity:0;
+    padding:0;
+    margin-right:0;
+    border:none;
+    border-radius:20px;
+    background:var(--offblack);
+    color:var(--white);
+    font-family:'Poppins',sans-serif;
+    font-size:0.85rem;
+    outline:none;
+    transition:width .25s ease, opacity .2s ease, padding .25s ease, margin .25s ease;
+  }
+  .search-wrap.open .search-input{
+    width:180px;
+    opacity:1;
+    padding:9px 16px;
+    margin-right:10px;
+  }
+  .search-input::placeholder{color:#999;}
+  .search-empty{
+    text-align:center;
+    color:#999;
+    font-size:0.9rem;
+    font-weight:300;
+    padding:24px 0;
+  }
+  @media (max-width:480px){
+    .search-wrap{top:14px;left:14px;}
+    .search-wrap.open .search-input{width:130px;}
+  }
+  header.hero .eyebrow{
+    font-size:0.75rem;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--red);
+    font-weight:500;
+    margin-bottom:14px;
+  }
+  header.hero .client-logo{
+    display:block;
+    height:auto;
+    width:clamp(110px,18vw,160px);
+    margin:0 auto 16px;
+  }
+  header.hero h1{
+    font-family:'Rock Salt',cursive;
+    font-size:clamp(1.6rem,4vw,2.6rem);
+    line-height:1.4;
+    margin-bottom:10px;
+  }
+  header.hero .swoosh{
+    display:block;
+    height:auto;
+    width:clamp(170px,26vw,260px);
+    margin:0 auto 18px;
+  }
+  .title-swoosh{
+    display:block;
+    height:auto;
+    width:clamp(90px,14vw,130px);
+    margin-top:0;
+  }
+  header.hero p{
+    font-weight:300;
+    color:#ddd;
+    font-size:1rem;
+    max-width:520px;
+    margin:0 auto;
+  }
+  header.hero .updated-stamp{
+    color:var(--red);
+    font-weight:500;
+    font-size:0.8rem;
+    letter-spacing:0.03em;
+    max-width:520px;
+    margin:8px auto 0;
+  }
+
+  main{
+    max-width:820px;
+    margin:0 auto;
+    padding:48px 24px 8px;
+  }
+
+  section{margin-bottom:28px;}
+  section h2{
+    font-family:'Rock Salt',cursive;
+    font-size:1.1rem;
+    color:var(--red);
+    margin-bottom:0;
+    padding-bottom:16px;
+    border-bottom:4px solid var(--red);
+    margin-bottom:24px;
+  }
+
+  /* Contact Sarah */
+  .contact-list{
+    list-style:none;
+  }
+  .contact-list li{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:16px 0;
+    border-bottom:1px solid #2a2a2a;
+    font-size:0.98rem;
+  }
+  .contact-list li:last-child{border-bottom:none;}
+  .contact-label{
+    flex-shrink:0;
+    width:90px;
+    font-weight:500;
+    font-size:0.75rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--red);
+  }
+  .contact-list a{
+    font-weight:400;
+    text-decoration:none;
+    color:var(--white);
+    transition:color .2s ease;
+  }
+  .contact-list a:hover{
+    color:var(--red);
+    text-decoration:underline;
+  }
+
+  .thanks-block{
+    text-align:center;
+    padding:26px 28px;
+    background:var(--black);
+    border-top:3px solid var(--red);
+    border-bottom:3px solid var(--red);
+    border-radius:10px;
+    margin:0 -4px;
+  }
+  .thanks-row{
+    display:inline-flex;
+    align-items:center;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:26px;
+  }
+  .thanks-text{
+    font-family:'Rock Salt',cursive;
+    font-size:clamp(1rem,2.4vw,1.3rem);
+    line-height:1.4;
+    color:var(--white);
+  }
+  .signature{
+    height:clamp(44px,6vw,64px);
+    width:auto;
+    filter:brightness(0) saturate(100%) invert(1);
+  }
+
+  @media (max-width:480px){
+    .contact-list li{flex-direction:column;align-items:flex-start;gap:4px;}
+  }
+
+  /* Commissioned Works accordion */
+  .work{
+    border-top:2px solid #2a2a2a;
+  }
+  .work:last-child{border-bottom:2px solid #2a2a2a;}
+  .work-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:20px 4px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .work-title{
+    font-weight:500;
+    font-size:1.02rem;
+    color:var(--white);
+  }
+  .work-sub{
+    font-weight:300;
+    font-size:0.82rem;
+    color:#999;
+    margin-top:3px;
+  }
+  .work-toggle{
+    flex-shrink:0;
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    background:var(--white);
+    color:var(--black);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1rem;
+    font-weight:500;
+    transition:transform .25s ease, background .2s ease, color .2s ease;
+  }
+  .work.open .work-toggle{
+    transform:rotate(45deg);
+    background:var(--red);
+    color:var(--white);
+  }
+  .work-body{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .3s ease;
+  }
+  .work.open .work-body{
+    /* max-height set dynamically in JS via toggleWork() based on actual content height */
+  }
+  .work-audio{
+    list-style:none;
+    padding:4px 4px 16px;
+    border-top:1px solid #2a2a2a;
+  }
+  .work-audio li{
+    padding:12px 0;
+  }
+  .audio-title{
+    font-weight:500;
+    font-size:0.95rem;
+    margin-bottom:8px;
+    color:var(--white);
+  }
+  .work-audio audio{
+    width:100%;
+    height:36px;
+  }
+
+  .work-parts{
+    list-style:none;
+    padding-bottom:16px;
+  }
+  .work-parts li{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:12px 4px 12px 4px;
+    border-top:1px solid #2a2a2a;
+  }
+  .part-name{
+    font-weight:500;
+    font-size:0.95rem;
+    color:var(--white);
+  }
+  .part-sub{
+    font-weight:300;
+    font-size:0.8rem;
+    color:#999;
+    margin-top:2px;
+  }
+  .dl-btn{
+    flex-shrink:0;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:var(--white);
+    color:var(--black);
+    text-decoration:none;
+    padding:8px 16px;
+    border-radius:5px;
+    font-size:0.82rem;
+    font-weight:500;
+    transition:background .2s ease, color .2s ease;
+    white-space:nowrap;
+  }
+  .dl-btn:hover{background:var(--red);color:var(--white);}
+
+  .bundle-btn-sm{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:var(--red);
+    color:var(--white);
+    text-decoration:none;
+    padding:10px 18px;
+    border-radius:5px;
+    font-weight:500;
+    font-size:0.82rem;
+    letter-spacing:0.02em;
+    margin:4px 4px 16px;
+    transition:opacity .2s ease;
+  }
+  .bundle-btn-sm:hover{opacity:0.85;}
+
+  /* Dark card sections (collapsible) */
+  .dark-card{
+    background:var(--offblack);
+    border-radius:10px;
+    padding:0 28px;
+    margin:0 -4px;
+  }
+  .dark-card h2{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--white);
+    border-bottom:none;
+    padding:28px 0;
+    margin-bottom:0;
+    cursor:pointer;
+    user-select:none;
+  }
+  .dark-card .title-stack{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+  .dark-card .section-toggle{
+    position:absolute;
+    right:0;
+    top:50%;
+    transform:translateY(-50%);
+    flex-shrink:0;
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    background:var(--red);
+    color:var(--white);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.1rem;
+    font-weight:500;
+    font-family:'Poppins',sans-serif;
+    transition:transform .25s ease;
+  }
+  .dark-card:not(.collapsed) .section-toggle{transform:translateY(-50%) rotate(45deg);}
+  .dark-card .section-body{
+    border-top:4px solid var(--red);
+    padding:28px 0 36px;
+    max-height:6000px;
+    overflow:hidden;
+    transition:max-height .35s ease, padding .35s ease;
+  }
+  .dark-card.collapsed .section-body{
+    max-height:0;
+    padding-top:0;
+    padding-bottom:0;
+    border-top:none;
+    overflow:hidden;
+  }
+
+  /* Financials */
+  .fin-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:28px;
+  }
+  .fin-col h3{
+    font-family:'Poppins',sans-serif;
+    font-weight:500;
+    font-size:0.78rem;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    margin-bottom:12px;
+    padding-bottom:10px;
+    border-bottom:2px solid #333;
+  }
+  .fin-col.pending h3{color:#ff6b68;border-bottom-color:#ff6b68;}
+  .fin-col.paid h3{color:#4fd884;border-bottom-color:#4fd884;}
+  .fin-list{list-style:none;}
+  .fin-list li{
+    padding:14px 0;
+    border-bottom:1px solid #2a2a2a;
+  }
+  .fin-list li:last-child{border-bottom:none;}
+  .fin-row-top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .fin-name{font-weight:500;font-size:0.92rem;color:var(--white);}
+  .fin-amount{font-weight:500;font-size:0.92rem;white-space:nowrap;}
+  .fin-col.pending .fin-amount{color:#ff6b68;}
+  .fin-col.paid .fin-amount{color:#4fd884;}
+  .fin-sub{font-weight:300;font-size:0.78rem;color:#999;margin-top:3px;}
+  .fin-note{
+    font-weight:300;
+    font-size:0.78rem;
+    color:#ff6b68;
+    font-style:italic;
+    margin-top:6px;
+  }
+  .fin-link{
+    display:inline-block;
+    margin-top:6px;
+    font-size:0.78rem;
+    font-weight:500;
+    color:var(--white);
+    text-decoration:underline;
+  }
+  .fin-row-bottom{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .fin-row-bottom .fin-link{margin-top:6px;}
+  .fin-pay-btn{
+    display:inline-block;
+    margin-top:6px;
+    padding:6px 14px;
+    border-radius:20px;
+    background:var(--red);
+    color:var(--white);
+    font-size:0.78rem;
+    font-weight:500;
+    text-decoration:none;
+  }
+  .fin-pay-btn:hover{opacity:0.85;}
+  .fin-paid-tag{
+    display:inline-block;
+    margin-top:6px;
+    font-size:0.78rem;
+    font-weight:500;
+    color:#4fd884;
+  }
+  .pending-badge-wrap{
+    display:inline-flex;
+    align-items:center;
+    margin-top:10px;
+  }
+  .pending-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:22px;
+    height:22px;
+    padding:0 7px;
+    margin-left:8px;
+    border-radius:11px;
+    background:#ff6b68;
+    color:var(--black);
+    font-family:'Poppins',sans-serif;
+    font-size:0.82rem;
+    font-weight:500;
+  }
+  .pending-badge-label{
+    display:inline-block;
+    margin-left:6px;
+    color:#ff6b68;
+    font-family:'Poppins',sans-serif;
+    font-size:0.82rem;
+    font-weight:500;
+    white-space:nowrap;
+  }
+
+  .chart-search-wrap{
+    margin-bottom:22px;
+  }
+  .chart-search-input{
+    width:100%;
+    padding:12px 16px;
+    border:1px solid #333;
+    border-radius:8px;
+    background:var(--offblack);
+    color:var(--white);
+    font-family:'Poppins',sans-serif;
+    font-size:0.9rem;
+    outline:none;
+    transition:border-color .2s ease;
+  }
+  .chart-search-input::placeholder{color:#777;}
+  .chart-search-input:focus{border-color:var(--red);}
+  .fin-empty{
+    font-weight:300;
+    font-size:0.85rem;
+    color:#777;
+    font-style:italic;
+  }
+
+  @media (max-width:600px){
+    .fin-grid{grid-template-columns:1fr;gap:32px;}
+  }
+
+  footer{
+    text-align:center;
+    background:var(--black);
+    color:var(--white);
+    padding:40px 24px 44px;
+    margin-top:8px;
+    border-top:5px solid var(--red);
+  }
+  footer p{
+    font-size:0.8rem;
+    color:#ccc;
+    font-weight:300;
+  }
+  footer strong{color:var(--red);font-weight:500;}
+
+  @media (max-width:480px){
+    .work-parts li{flex-direction:column;align-items:flex-start;gap:10px;}
+    .dl-btn{width:100%;justify-content:center;}
+  }
+
+  /* ---------- MUSICIAN SHARE ---------- */
+  .musician-share-btn{
+    margin-top:18px;
+    padding:10px 18px;
+    border:2px solid var(--red);
+    border-radius:20px;
+    background:transparent;
+    color:var(--white);
+    font-family:'Poppins',sans-serif;
+    font-weight:500;
+    font-size:0.85rem;
+    cursor:pointer;
+    transition:opacity .2s ease;
+  }
+  .musician-share-btn:hover{opacity:0.8;}
+  .musician-share-box{
+    position:relative;
+    margin:16px auto 0;
+    max-width:460px;
+    background:var(--black);
+    border:2px solid var(--red);
+    border-radius:10px;
+    padding:18px 40px 18px 18px;
+    text-align:left;
+  }
+  .musician-share-close{
+    position:absolute;
+    top:10px;
+    right:10px;
+    width:26px;
+    height:26px;
+    border:none;
+    border-radius:50%;
+    background:transparent;
+    color:var(--white);
+    font-size:1.3rem;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:opacity .2s ease;
+  }
+  .musician-share-close:hover{opacity:0.7;}
+  .musician-share-label{
+    color:var(--red);
+    font-size:0.72rem;
+    font-weight:500;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    margin-bottom:6px;
+  }
+  .musician-share-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .musician-share-row input{
+    flex:1;
+    padding:10px 12px;
+    border:1px solid #444;
+    border-radius:6px;
+    background:var(--offblack);
+    color:var(--white);
+    font-family:'Poppins',sans-serif;
+    font-size:0.82rem;
+  }
+  .musician-share-row button{
+    padding:10px 16px;
+    border:none;
+    border-radius:6px;
+    background:var(--red);
+    color:var(--white);
+    font-family:'Poppins',sans-serif;
+    font-weight:500;
+    font-size:0.8rem;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .musician-share-row button:hover{opacity:0.85;}
+  .musician-share-hint{
+    color:#aaa;
+    font-size:0.75rem;
+    font-weight:300;
+    line-height:1.4;
+    margin:0;
+  }
+  .trademark-sym{
+    font-size:0.35em;
+    vertical-align:super;
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================= LOGIN GATE ======================= -->
+<div id="gate">
+  <div class="gate-box">
+    <h1 id="gate-title">Sarah Griego Music<br>Client Portal</h1>
+    <div id="user-field-wrap">
+      <input type="text" id="user-input" placeholder="Username" autocomplete="off">
+    </div>
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="off">
+    <div class="remember-wrap" id="remember-wrap">
+      <label class="remember-row">
+        <input type="checkbox" id="remember-check">
+        <span>Remember me on this device</span>
+      </label>
+    </div>
+    <button id="pw-submit">Unlock Portal</button>
+    <div id="gate-error"></div>
+  </div>
+</div>
+
+<!-- ======================= WELCOME OVERLAY ======================= -->
+<div id="welcome-overlay">
+  <button id="welcome-close" aria-label="Close">&times;</button>
+  <div class="welcome-inner">
+    <span id="welcome-text"></span>
+    <img src="assets/swoosh.png" alt="" class="welcome-swoosh">
+  </div>
+</div>
+
+<!-- ======================= PORTAL ======================= -->
+<div id="portal">
+  <header class="hero">
+    <div class="search-wrap" id="search-wrap">
+      <input type="text" class="search-input" id="search-input" placeholder="Search invoices, contact info...">
+      <button class="search-toggle" id="search-toggle" aria-label="Search" onclick="toggleSearch()">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.2" y2="16.2"></line>
+        </svg>
+      </button>
+    </div>
+    <button class="signout-toggle" id="signout-toggle" aria-label="Sign out" onclick="signOut()">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+    </button>
+    <div class="eyebrow">Parker Compositions</div>
+    <img id="portal-logo" src="" alt="" class="client-logo" style="display:none;">
+    <h1 id="portal-title">Client Name</h1>
+    <img src="assets/swoosh.png" alt="" class="swoosh">
+    <p id="portal-sub">Your parts and materials, ready to download.</p>
+    <p id="portal-updated" class="updated-stamp" style="display:none;"></p>
+    <button id="musician-share-btn" class="musician-share-btn" style="display:none;" onclick="toggleMusicianShareBox()">Share link for musicians</button>
+    <div id="musician-share-box" class="musician-share-box" style="display:none;">
+      <button class="musician-share-close" onclick="toggleMusicianShareBox()" aria-label="Close">&times;</button>
+      <p class="musician-share-label">Link</p>
+      <div class="musician-share-row">
+        <input type="text" id="musician-share-link" readonly>
+        <button onclick="copyMusicianField('musician-share-link')">Copy</button>
+      </div>
+      <p class="musician-share-label" id="musician-share-code-label" style="display:none;">Access Code</p>
+      <div class="musician-share-row" id="musician-share-code-row" style="display:none;">
+        <input type="text" id="musician-share-code" readonly>
+        <button onclick="copyMusicianField('musician-share-code')">Copy</button>
+      </div>
+      <p class="musician-share-label" id="musician-share-all-label" style="display:none;">One-Click Link (auto-fills the code)</p>
+      <div class="musician-share-row" id="musician-share-all-row" style="display:none;">
+        <input type="text" id="musician-share-all" readonly>
+        <button onclick="copyMusicianField('musician-share-all')">Copy All</button>
+      </div>
+      <p class="musician-share-hint">Send the Link + Code separately, or send the One-Click Link by itself — paste it into a browser and it unlocks automatically, no typing needed. This gives them audio-only access for practice, no financials or personal info.</p>
+    </div>
+  </header>
+
+  <main>
+    <section id="works-section" class="dark-card collapsed">
+      <h2 onclick="toggleSection('works-section')"><span class="title-stack">Commissioned Works<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
+      <div class="section-body">
+        <div class="chart-search-wrap">
+          <input type="text" id="chart-search-input" class="chart-search-input" placeholder="Find a chart...">
+        </div>
+        <div id="works-list"></div>
+        <div class="search-empty" id="search-empty" style="display:none;">No pieces or parts match your search.</div>
+      </div>
+    </section>
+
+    <section id="financials-section" class="dark-card collapsed">
+      <h2 onclick="toggleSection('financials-section')"><span class="title-stack">Financials<img src="assets/swoosh-c.png" alt="" class="title-swoosh"><span id="financials-header-badge-wrap" class="pending-badge-wrap" style="display:none;"><span id="financials-header-badge" class="pending-badge"></span><span id="financials-header-badge-label" class="pending-badge-label"></span></span></span><span class="section-toggle">+</span></h2>
+      <div class="section-body">
+        <div class="fin-grid">
+          <div class="fin-col pending">
+            <h3>Pending<span id="pending-badge" class="pending-badge" style="display:none;"></span></h3>
+            <ul class="fin-list" id="fin-pending"></ul>
+          </div>
+          <div class="fin-col paid">
+            <h3>Paid</h3>
+            <ul class="fin-list" id="fin-paid"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact-section" class="dark-card collapsed">
+      <h2 onclick="toggleSection('contact-section')"><span class="title-stack">Contact Sarah<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
+      <div class="section-body">
+        <ul class="contact-list">
+          <li><span class="contact-label">Phone (Cell)</span><a href="tel:+15059990671">(505) 999-0671</a></li>
+          <li><span class="contact-label">Email</span><a href="mailto:parkercompositions@gmail.com">parkercompositions@gmail.com</a></li>
+          <li><span class="contact-label">Website</span><a href="https://sarahgriegomusic.com" target="_blank" rel="noopener">sarahgriegomusic.com</a></li>
+          <li><span class="contact-label">Instagram</span><a href="https://instagram.com/sarahgriegomusic" target="_blank" rel="noopener">@sarahgriegomusic</a></li>
+          <li id="remittance-row"><span class="contact-label">Remittance</span><a href="https://www.paypal.biz/ParkerCompositions" target="_blank" rel="noopener">PayPal — paypal.biz/ParkerCompositions</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="thanks-block" id="thanks-block">
+      <div class="thanks-row">
+        <span class="thanks-text">Thank you for your business!</span>
+        <img src="assets/signature-white.png" alt="Sarah Griego signature" class="signature">
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p><strong>Parker Compositions</strong> · sarahgriegomusic.com · parkercompositions@gmail.com</p>
+  </footer>
+</div>
+
+<script>
+/* =====================================================================
+   CLIENT CONFIG — add a new client by adding one entry below.
+   URL pattern: index.html?client=SLUG
+   ===================================================================== */
+let currentWorks = [];
+let musicianMode = false;
+
+const CLIENTS = {
+  "one-o-clock-lab-band": {
+    name: "Alan Baylock",
+    username: "abaylock",
+    password: "SGmusicABaylock!",
+    heroSub: "The One O'Clock Lab Band — parts and materials, ready to download.",
+    updatedAt: "September 16, 2026 at 4:57 PM EST",
+    logo: "assets/logos/one-oclock-lab-band-logo.svg",
+    groupName: "One O'Clock Lab Band®",
+    musicianCode: "oneo'clock",
+    works: [
+      { title: "Sassy", sub: "", audio: [], parts: [] },
+      { title: "Preaching To The Choir", sub: "", audio: [], parts: [] },
+      { title: "I Could Fall In Love", sub: "", audio: [], parts: [] },
+      { title: "O Jogo de Telefones", sub: "", audio: [], parts: [] },
+      { title: "Baltimore", sub: "", audio: [], parts: [] },
+      { title: "[Majic-12]", sub: "", audio: [], parts: [] },
+      { title: "CommUnity Spirit", sub: "", audio: [], parts: [] },
+      { title: "Caged Rage", sub: "", audio: [], parts: [] },
+      {
+        title: "National Amnesia/Do You Wanna Know What I Want? (V2)",
+        sub: "New York Voices Medley, arr. Sarah Griego",
+        bundleUrl: "https://script.google.com/macros/s/AKfycbyJzc5bz3P_eXevPvDOmGYvFfdA4n0Dl2VMNKSykL3f89UiyoD2rW6fL-BZarPebZ8iuQ/exec?folderId=1EhzjunAZL5ia1rYFAn822qnrT5U8bn7o",
+        audio: [
+          { title: "MIDI Mockup", url: "assets/audio/national-amnesia-do-you-wanna-know.m4a" }
+        ],
+        parts: [
+          { title: "Full Score", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1xgwR5YQdy6gC6rb7uaClePWBx7ow7R9b" },
+          { title: "Solo Vocalist/SATB Vocalists", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1WQ9IhQGfI5g9m0v8JcDEca3A-gqJZbGN" },
+          { title: "Alto Sax 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1k1JAuLH-E-_oZGJ3BUmDRGZvqXZ5NtoO" },
+          { title: "Alto Sax 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1HctfP79p89VvXkCx47Q10r2A8VoggraV" },
+          { title: "Tenor Sax 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1sQA5njvqAJLz54yL2JyGfsmTy1yuWTdC" },
+          { title: "Tenor Sax 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1m5VnDibfQOLYWXM8em_Ef2kkJpS71ssX" },
+          { title: "Baritone Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1RvkwyHQkjuPV9Z9H_uS4caBCV-OSW09a" },
+          { title: "Trumpet in B♭ 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Mj712wtRheCO1Wc43GMg9KaoMhVzWaJ9" },
+          { title: "Trumpet in B♭ 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1WD2TgHOTWWBxTDIrFAXT3xR9kzhdFW5w" },
+          { title: "Trumpet in B♭ 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1IVnoN5zlJFFMUg1D7vpDSWMj4C7wXbli" },
+          { title: "Trumpet in B♭ 4", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1ldc94grLcn8Gp-xYdL1msla04j8rFIi_" },
+          { title: "Opt. Trumpet in B♭ 5", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1LFPcOE0lM7OurGjofbQ-S3ZZLidv8IK3" },
+          { title: "Trombone 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=11nwJ6tV9PCTyIFYF0CCCLVgqLWWGwApk" },
+          { title: "Trombone 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1TuOjYAzx_nv737jKgQfxZwvBPJvmhcU4" },
+          { title: "Trombone 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1HL_vtXFsVtIgr5C5fPUng9lABUeJM7c2" },
+          { title: "Bass Trombone 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=15_d7Vo64xOmK6GaJNFIceuNXefrPNEVA" },
+          { title: "Opt. Bass Trombone 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1YxDCOI6HiR211GWaID8Ef5-Wl9WEejEf" },
+          { title: "Piano", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=18oBeccXxdyjLs5ugDusAYVYQF22xUaAO" },
+          { title: "Electric Guitar", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=19jY_pcVdA2cgoaRZc0fjK9DVtjO1jngQ" },
+          { title: "Electric Bass", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=126taafID_OugeRl_Yn3PB5PZdIwZltsg" },
+          { title: "Drum Set", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1sG1rD9r_m-i0ca0x_j6RNCA8YXpA4jiz" },
+          { title: "Opt. Violin", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1QVhjOF0P3Gs-jFGF0JybhkM0Cxlq0klq" }
+        ]
+      },
+      {
+        title: "In the Middle",
+        sub: "arr. Sarah Griego (V1)",
+        bundleUrl: "https://script.google.com/macros/s/AKfycbyJzc5bz3P_eXevPvDOmGYvFfdA4n0Dl2VMNKSykL3f89UiyoD2rW6fL-BZarPebZ8iuQ/exec?folderId=1VEVIqd8OXw-1z6eLyxPvqG5lqwLY6oOl",
+        audio: [
+          { title: "Full Recording", url: "assets/audio/in-the-middle.mp3" }
+        ],
+        parts: [
+          { title: "Full Score", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1fxaMEzfNjAvgXnvHjT3hGeZPQXQtG_Ab" },
+          { title: "Soprano Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1YcJ85jOX3WhSvprcnh0RFl4obcKWJxiE" },
+          { title: "Alto Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Rtplxsx448AsOtL82s0DshfgAqs2aKWS" },
+          { title: "Tenor Sax 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1PJUqP0XJa-Gc24XiiHWEx0Zqs4xR5A6S" },
+          { title: "Tenor Sax 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1hXyEZSckmNP-OmjBht3Hjoj94Y6nD_ku" },
+          { title: "Baritone Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1vN81-ooevBIrsMkz4dkMf3mW1OXenXaR" },
+          { title: "Trumpet in B♭ 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=16pAlKOA5HmgJFrcT5khT-6mHpcNTOLYC" },
+          { title: "Trumpet in B♭ 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Aj1yHa2SmtSq55hqEqtLc5GwSzRKiYLB" },
+          { title: "Trumpet in B♭ 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1o5GylyWeepYKSkkXPFDQqsdohil8lgPF" },
+          { title: "Trumpet in B♭ 4", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1IQDPF3oCdKxKYaKOhGTLPpuz9DTEupYF" },
+          { title: "Trumpet in B♭ 5", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1ODTk6cIMKFvsVKi-zS2MpNoahITFVaLC" },
+          { title: "Trombone 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1S03fCyuQzCpNqxKue_Y2DvS56b4sHX7W" },
+          { title: "Trombone 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1X344YZkhQw8pylZFHKwHbm-QEawExoD0" },
+          { title: "Trombone 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=14WkOXVziejn5ltTgIwL_9YHsyVwO58NJ" },
+          { title: "Bass Trombone 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Dog2h-YBwT6-Qvefef0_qmNRKgyd91yo" },
+          { title: "Bass Trombone 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1bQo5K4lelOpviJRnyTN1jDOfgqF96Rgf" },
+          { title: "Acoustic Piano", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1fMwkFvzqD-oHIbwsm45MymDlEqQPCytp" },
+          { title: "Electric Guitar", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1hQKu5-9KcS5H1ayvXw96ftTY7DXtUsbk" },
+          { title: "Electric Bass", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1tNUGpiaSE32DS_jO91Oa3caQAoRhiBLp" },
+          { title: "Drum Set", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=14YvayLzd52P4NrF9W05UDBXe1fQTo5Eo" },
+          { title: "Violin", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1YGZfvAANeCW_rVYjXwov_FsQjjv_7UBU" }
+        ]
+      }
+    ],
+    financials: {
+      pending: [
+        { name: "In the Middle", amount: "$1,500.00", sub: "Invoice #082726 — arrangement fee", noPayButton: true, note: "Payment method to be confirmed by Alan and UNT.", invoiceUrl: "https://drive.google.com/uc?export=download&id=1HZp4aAPal4rE4vOHAWctyu6zsjRw-Ypo" }
+      ],
+      paid: []
+    },
+    showFinancials: true
+  },
+  "brandon-robertson": {
+    name: "Brandon Robertson",
+    username: "brobertson",
+    password: "SGmusicBRobertson!",
+    heroSub: "Your parts and materials, ready to download.",
+    updatedAt: "August 30, 2026 at 4:05 PM EST",
+    groupName: "Brandon Robertson",
+    musicianCode: "brobertson",
+    works: [
+      {
+        title: "Blue Skies",
+        sub: "",
+        bundleUrl: "https://script.google.com/macros/s/AKfycbyJzc5bz3P_eXevPvDOmGYvFfdA4n0Dl2VMNKSykL3f89UiyoD2rW6fL-BZarPebZ8iuQ/exec?folderId=1NA0aCrL4EEtSefqjHI16hi2QPOJ--WFd",
+        audio: [
+          { title: "Full Recording", url: "assets/audio/blue-skies.mp3" }
+        ],
+        parts: [
+          { title: "Full Score", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1yNLxAsLYkglv3iXKFsjUzoaYQAJr3L35" },
+          { title: "Score & Parts (Combined)", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1aG0NSDXo_RZ3pJgUx47cET3qauSwFLl5" },
+          { title: "Alto Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1pxNgboWX_RA_vhTtGjWaHAKzI4bJEwLn" },
+          { title: "Tenor Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1odZ3fxSKFVCYMJEInql_QI_sePtSnOcJ" },
+          { title: "Trumpet", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1pvMNJ4IqhpFIqVzYW6I2HIQZAHU_eIiC" },
+          { title: "Trombone", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=17hNollCP23vaznnZO08U4FKKwgkON8rz" },
+          { title: "Piano", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1A7J7JnuPyS7-7lhkx0gUrQuN2L7TzGz5" },
+          { title: "Guitar", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1a8b7lBEshenI8DA-wTEzOLsLwaHm-GLT" },
+          { title: "Acoustic Bass", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1j2T8KtyQtlO3Xw1KMNFsjlS2olYZi024" },
+          { title: "Drum Set", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1B60PDSWDN1bFI7AvPdkXmTqYGGIlu1Ir" },
+          { title: "Vocals", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1y229bi6Vd5wJ5QUGwBr49_6VnOTtqMlG" }
+        ]
+      },
+      {
+        title: "But Not For Me",
+        sub: "",
+        bundleUrl: "https://script.google.com/macros/s/AKfycbyJzc5bz3P_eXevPvDOmGYvFfdA4n0Dl2VMNKSykL3f89UiyoD2rW6fL-BZarPebZ8iuQ/exec?folderId=1Rau84Pmg4l7izpAk8ABQQh4ZgksjPBed",
+        audio: [
+          { title: "Full Recording", url: "assets/audio/but-not-for-me.mp3" }
+        ],
+        parts: [
+          { title: "Full Score", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1fAGAPSF5fWnvJ1sLp2wt8-QNbvLqgIWp" },
+          { title: "Score & Parts (Combined)", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1zLIS6Wthkj1mWWDzbMFGlvNG0_PJQ6Mj" },
+          { title: "Alto Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1-_Pi2Egt5PhX6J48x2inDNXL1eP1sEnF" },
+          { title: "Tenor Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1edD_j90_RjXg8d5q9UGFPtZTVwOZDE5h" },
+          { title: "Trumpet in B♭ (Opt. Flugel)", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Am1S40B-lg7s1Rsn6wqtZg6DB5mXuwx8" },
+          { title: "Trombone", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1oAj-1ucfuy7Ig3BmQCfAaVQQC7RnIGkz" },
+          { title: "Piano", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Kw6uLnqV9Qe42EAXlGzNyqUtICcYm8vP" },
+          { title: "Guitar", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1ctiKND1pnJKOMwP0BscjP-Wk_un9phbw" },
+          { title: "Electric Bass", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1cnXYRg_2eHMiLvULl5RmJ-S12PuCQ259" },
+          { title: "Drum Set", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1sk91EGKy6585VJ-mRjciFf0vQSPOClZy" },
+          { title: "Vocals", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1e-K4NCGA_uILmlEIn-93CBYhwHP6uppe" }
+        ]
+      },
+      {
+        title: "Honeysuckle Rose",
+        sub: "",
+        bundleUrl: "https://script.google.com/macros/s/AKfycbyJzc5bz3P_eXevPvDOmGYvFfdA4n0Dl2VMNKSykL3f89UiyoD2rW6fL-BZarPebZ8iuQ/exec?folderId=15U34odH8Cr7S-qwqA1h6DnaXV6AuyBLE",
+        audio: [
+          { title: "Full Recording", url: "assets/audio/honeysuckle-rose.m4a" }
+        ],
+        parts: [
+          { title: "Full Score", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1ZRvgaN0P-Y3l8DZ3AB6kC_tlv8_e49-b" },
+          { title: "Alto Sax 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1yV1lXSwox24GTDXbHRZ0S1-rLD5E2lDg" },
+          { title: "Alto Sax 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=17ykJijR_gGk6P4SKxeteHPBIhpsPmtzV" },
+          { title: "Tenor Sax 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Z4HeXNLkKKZ6NyIr7X8y14g4nBBTv46X" },
+          { title: "Baritone Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1EqFOvc2OmOfkyDOo9FU5l1KrzFIfuMdZ" },
+          { title: "Trumpet in B♭ 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1GoulziOfTNAIqTPepHRmtMArfrDU5KyE" },
+          { title: "Trumpet in B♭ 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1ka-3LYJti1D_qb6HeTSo01htyTOmsPWx" },
+          { title: "Trumpet in B♭ 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1roGIPYBRAYz_R9dNzBjpnXB5yGEllcap" },
+          { title: "Trumpet in B♭ 4", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1TTntnv8zofaLxF7EQBGHMp_mHSLjeMPq" },
+          { title: "Trombone 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1gtpB2DkMW_5wf7c6uABHusGwz-1tljDU" },
+          { title: "Trombone 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1vwV0YmGQrRq2Kt0MZhett7FPfL6E8cdR" },
+          { title: "Trombone 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1yac-WkjwWGrqPwerXkTOXqZdFkbp-RO6" },
+          { title: "Bass Trombone", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1wXvxBdo263sn77VWXLeovzIGT5b4PirW" },
+          { title: "Piano", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=14IFPuWJv5fkCu-jmw72gMw8ZJbx4ZpCF" },
+          { title: "Guitar", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Agz8s9qIIdhYd5qk4u38afbe40T4txtL" },
+          { title: "Acoustic Bass", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1xJ5ORtELlzy_VK89FV59RtMp832LW42e" },
+          { title: "Drum Set", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1ap4CiPbtF84Y3CBjz6ScnZIolYlZNC3s" },
+          { title: "Vocals", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1AN2kOsFsva00ZDWm4X1pNu9R4BUPMqYI" }
+        ]
+      },
+      {
+        title: "No Diggity",
+        sub: "",
+        bundleUrl: "https://script.google.com/macros/s/AKfycbyJzc5bz3P_eXevPvDOmGYvFfdA4n0Dl2VMNKSykL3f89UiyoD2rW6fL-BZarPebZ8iuQ/exec?folderId=1YKGEapaQqeQdqlJxd1IBQDosb6RVdsw-",
+        audio: [
+          { title: "Full Recording", url: "assets/audio/no-diggity.mp3" }
+        ],
+        parts: [
+          { title: "Full Score", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1v6IO91QLqD7ev5QKyVZUiUnU6R6Y3IXk" },
+          { title: "Score & Parts (Combined)", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=18QSJaCZ0i6GMPhQHLpmOikDKWThXToeW" },
+          { title: "Alto Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1bvTjxb6-EjGey3tVUq_vKEHnEtSbQod2" },
+          { title: "Tenor Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=19oDWuDbF4MmZ-cHEy76-DMCYWwkYhjjY" },
+          { title: "Trumpet in B♭", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1syrUT9tWZLKPh-ZC3BodhsZ9AkjIgxaq" },
+          { title: "Trombone", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1dBrHGES351E66mcdFEiTVgVCZgNPIAIj" },
+          { title: "Piano", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1eB8tEJeW8bHgCO9ceCbwGI2p5WmRabzw" },
+          { title: "Guitar", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1JkD2unTpTxQC0-dB6Ft7ZNdK_aRpkgi9" },
+          { title: "Electric Bass", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1B-wmkBe1PDzoFQc4WnucqeAG9CBdjgB8" },
+          { title: "Drums", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1CxSpmbYb11oaqep5PdYVfbhh0UxKRvbl" },
+          { title: "Vocals", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1RuB5HrLnQaLSXUq-KKvymqYDpjDoa2QU" }
+        ]
+      },
+      {
+        title: "Quiet Fire",
+        sub: "",
+        bundleUrl: "https://script.google.com/macros/s/AKfycbyJzc5bz3P_eXevPvDOmGYvFfdA4n0Dl2VMNKSykL3f89UiyoD2rW6fL-BZarPebZ8iuQ/exec?folderId=1Qm1hcrknNvLWVdJF_0eaMeN-ElzqPTBS",
+        audio: [
+          { title: "Full Recording", url: "assets/audio/quiet-fire.mp3" }
+        ],
+        parts: [
+          { title: "Full Score", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=18MH0AM_mB7LQTERi4MhoXWqLd1fJy3b1" },
+          { title: "Alto Sax 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1SoACDmxIBa_Wsz8eW3OCuE3U1l1kFNb2" },
+          { title: "Alto Sax 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1LE_eCLe2Z6qjXwuI8mwGugGmcU_aXHsF" },
+          { title: "Tenor Sax 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1gTYM1jrt5Fh1_UANGGj9z8pCTVth_Loe" },
+          { title: "Tenor Sax 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1gPFxlvD_QC884CZcbVZvy2cWxeMpgNMy" },
+          { title: "Baritone Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=12TBgEi8xup7iQX4xqVh9D-jGKwprD8V0" },
+          { title: "Trumpet in B♭ 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1gvlLEjIq1P4P9NoDGQeMdcc_WsXKckBw" },
+          { title: "Trumpet in B♭ 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=19by9EqqNm55LGXtAuqFr_tBuHf_SGn_Z" },
+          { title: "Trumpet in B♭ 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1RvY4a7QPhEc5tppbl1VdMzxorZXOBV8b" },
+          { title: "Trumpet in B♭ 4", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1AEAIAoh7rnARGflRXOJEAmovuTrvE-nU" },
+          { title: "Trombone 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1y6hE7rWt7ompEfdnJoLh1JWHcuSgHJpX" },
+          { title: "Trombone 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1T103gLinxn2qP_bbvjnnRtBjaWkbstlo" },
+          { title: "Trombone 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1ds5FcglVbTY-8uFiKBdOooTyhHbxDG9E" },
+          { title: "Bass Trombone", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1rp97FrXRxamt57K9OgAaHHmsG5kMLZaw" },
+          { title: "Piano", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=13DfchsOcshWJiTxa-PBxDACrXp8BDyEf" },
+          { title: "Guitar", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=18qcgEpVh6Ofp6G5C5WEGgDyOukQp7Hra" },
+          { title: "Acoustic Bass", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=13BcVvkbkYaQIN09gQn0ngDz6bpkvYrHK" },
+          { title: "Drum Set", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1jMS8kjsYRP9jbRfjtM1rUAAC7zEO7Voe" },
+          { title: "Timbales", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1N4tFMDQUTxgt7p-hLLk1MVEAJVksXnRg" },
+          { title: "Bongo Drums", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1XQYl5IYLl_eBy1agkyAJFwzmaqsim8lo" },
+          { title: "Vibraphone", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1HkpGBsewKjeWmlxLQDpw77QTsFM4ip1F" },
+          { title: "Solo Changes (C)", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1GlPMcthDZaKQRetMxx42DyyRU1G3uKYK" },
+          { title: "Solo Changes (B♭)", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Mh8z2aEoeN5sAKJP6nSPzt6iOVj0R07o" },
+          { title: "Solo Changes (E♭)", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1dozBP6gSOHah_paolhiJXA5S8A9n0KSS" }
+        ]
+      },
+      {
+        title: "Titanium",
+        sub: "",
+        bundleUrl: "https://script.google.com/macros/s/AKfycbyJzc5bz3P_eXevPvDOmGYvFfdA4n0Dl2VMNKSykL3f89UiyoD2rW6fL-BZarPebZ8iuQ/exec?folderId=1uZlVrrm43qqwbSJf5waCexnZD-5Xa1Q6",
+        audio: [
+          { title: "Full Recording", url: "assets/audio/titanium.mp3" }
+        ],
+        parts: [
+          { title: "Full Score", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1RulPUpRXXEjRn0FdHWSXigKlFano6M4r" },
+          { title: "Score & Parts (Combined)", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1EhK7E_jmo3HxL7edy-sjpbDAoz-VQeXZ" },
+          { title: "Alto Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1SACPhFukpSTm9jkehM34nelZU6d2fQAG" },
+          { title: "Tenor Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1IqzG3kZiHxVICTQD5c8Kjv_Hq3xB419j" },
+          { title: "Trumpet", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1rGupeX4qkL_enYUD1b6mp6yynRXYVd23" },
+          { title: "Trombone", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1-EdD9ueWVGno55y9sknho3TMpowPgVQT" },
+          { title: "Piano", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1qzo8kE_Fr8OgT7LRcLMXwdpxMrCx6_A-" },
+          { title: "Guitar", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=16HUiDZGea33vfQJ0sHlOImcYP65HenI4" },
+          { title: "Electric Bass", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1E8zZBaZcD6S2j9vRRAxxjoENlyRbsw08" },
+          { title: "Drum Set", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1ix_Xk94KDWUHBAOvzfdrCgVtvXZja44N" },
+          { title: "Vocals", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=143ugRRDO7DazYNrJpuExsu5iZU-U36Sg" }
+        ]
+      }
+    ],
+    financials: {
+      pending: [],
+      paid: [
+        { name: "Quiet Fire", amount: "$250.00", sub: "Invoice #11242025", invoiceUrl: "https://drive.google.com/uc?export=download&id=1Hpdy9nyaIqVKQMM3b1bJrwaG1MmaTkGx", receiptUrl: "https://drive.google.com/uc?export=download&id=1PJoyqrZ8fMKAMBNsJ2CkFXp9dFsxMF3L" },
+        { name: "Honeysuckle Rose (Vox feature)", amount: "$65.00", sub: "Invoice #031026", invoiceUrl: "https://drive.google.com/uc?export=download&id=1ODNTU3h3J77Tsgaks32zwzTWKhBuVh_r", receiptUrl: "https://drive.google.com/uc?export=download&id=1k3l3E3Cpo-EK0YI3Y2WXUgv6chfylHEG" },
+        { name: "No Diggity, Titanium, But Not For Me, Blue Skies", amount: "$600.00", sub: "Invoice #033126 · Combined", invoiceUrl: "https://drive.google.com/uc?export=download&id=1e6jeZnBkerxThf64fZ8lzJlr0Uh3zZiz", receiptUrl: "https://drive.google.com/uc?export=download&id=1rtzmO0YBkusSRPL84R5xP3Dq-JMWfOmn" }
+      ]
+    }
+  },
+  "new-york-voices": {
+    name: "Darmon Meader",
+    username: "dmeader",
+    password: "SGmusicDMeader!",
+    heroSub: "New York Voices — parts and MIDI mockups, ready to download.",
+    updatedAt: "September 19, 2026 at 11:39 AM EST",
+    groupName: "New York Voices",
+    musicianCode: "nyvoices",
+    works: [
+      {
+        title: "National Amnesia/Do You Wanna Know What I Want? (V2)",
+        sub: "New York Voices Medley, arr. Sarah Griego",
+        bundleUrl: "https://script.google.com/macros/s/AKfycbyJzc5bz3P_eXevPvDOmGYvFfdA4n0Dl2VMNKSykL3f89UiyoD2rW6fL-BZarPebZ8iuQ/exec?folderId=1EhzjunAZL5ia1rYFAn822qnrT5U8bn7o",
+        audio: [
+          { title: "MIDI Mockup", url: "assets/audio/national-amnesia-do-you-wanna-know.m4a" }
+        ],
+        parts: [
+          { title: "Full Score", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1xgwR5YQdy6gC6rb7uaClePWBx7ow7R9b" },
+          { title: "Solo Vocalist/SATB Vocalists", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1WQ9IhQGfI5g9m0v8JcDEca3A-gqJZbGN" },
+          { title: "Alto Sax 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1k1JAuLH-E-_oZGJ3BUmDRGZvqXZ5NtoO" },
+          { title: "Alto Sax 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1HctfP79p89VvXkCx47Q10r2A8VoggraV" },
+          { title: "Tenor Sax 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1sQA5njvqAJLz54yL2JyGfsmTy1yuWTdC" },
+          { title: "Tenor Sax 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1m5VnDibfQOLYWXM8em_Ef2kkJpS71ssX" },
+          { title: "Baritone Sax", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1RvkwyHQkjuPV9Z9H_uS4caBCV-OSW09a" },
+          { title: "Trumpet in B♭ 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1Mj712wtRheCO1Wc43GMg9KaoMhVzWaJ9" },
+          { title: "Trumpet in B♭ 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1WD2TgHOTWWBxTDIrFAXT3xR9kzhdFW5w" },
+          { title: "Trumpet in B♭ 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1IVnoN5zlJFFMUg1D7vpDSWMj4C7wXbli" },
+          { title: "Trumpet in B♭ 4", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1ldc94grLcn8Gp-xYdL1msla04j8rFIi_" },
+          { title: "Opt. Trumpet in B♭ 5", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1LFPcOE0lM7OurGjofbQ-S3ZZLidv8IK3" },
+          { title: "Trombone 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=11nwJ6tV9PCTyIFYF0CCCLVgqLWWGwApk" },
+          { title: "Trombone 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1TuOjYAzx_nv737jKgQfxZwvBPJvmhcU4" },
+          { title: "Trombone 3", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1HL_vtXFsVtIgr5C5fPUng9lABUeJM7c2" },
+          { title: "Bass Trombone 1", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=15_d7Vo64xOmK6GaJNFIceuNXefrPNEVA" },
+          { title: "Opt. Bass Trombone 2", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1YxDCOI6HiR211GWaID8Ef5-Wl9WEejEf" },
+          { title: "Piano", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=18oBeccXxdyjLs5ugDusAYVYQF22xUaAO" },
+          { title: "Electric Guitar", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=19jY_pcVdA2cgoaRZc0fjK9DVtjO1jngQ" },
+          { title: "Electric Bass", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=126taafID_OugeRl_Yn3PB5PZdIwZltsg" },
+          { title: "Drum Set", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1sG1rD9r_m-i0ca0x_j6RNCA8YXpA4jiz" },
+          { title: "Opt. Violin", sub: "PDF", url: "https://drive.google.com/uc?export=download&id=1QVhjOF0P3Gs-jFGF0JybhkM0Cxlq0klq" }
+        ]
+      }
+    ],
+    financials: {
+      pending: [
+        { name: "National Amnesia/Do You Wanna Know What I Want?", amount: "$500.00", sub: "Invoice #091926 — arrangement fee", invoiceUrl: "https://drive.google.com/uc?export=download&id=1XNLuzpRvF9UThDxvp5Eu9a0purTPCUe7", payUrl: "https://www.paypal.com/ncp/payment/AJWXZHUBLNX5N" }
+      ],
+      paid: []
+    },
+    showFinancials: true
+  }
+
+  /* Add the next client here, e.g.:
+  "florida-gulf-coast-university": {
+    name: "Florida Gulf Coast University",
+    username: "fgcu",
+    password: "SOME-PASSWORD",
+    heroSub: "Your parts and materials, ready to download.",
+    works: [
+      {
+        title: "...",
+        sub: "...",
+        bundleUrl: "...",
+        parts: [ { title: "...", sub: "PDF", url: "..." } ]
+      }
+    ],
+    financials: {
+      pending: [ { name: "...", amount: "$0", sub: "...", url: "..." } ],
+      paid: [ { name: "...", amount: "$0", sub: "...", url: "..." } ]
+    }
+  }
+  */
+};
+
+/* ===================================================================== */
+
+// Give every client object a reference to its own key, so links/buttons
+// can build shareable URLs without hardcoding slugs elsewhere.
+for (const key in CLIENTS) { CLIENTS[key].slug = key; }
+
+const userInput = document.getElementById('user-input');
+const pwInput = document.getElementById('pw-input');
+const pwSubmit = document.getElementById('pw-submit');
+const gateError = document.getElementById('gate-error');
+const rememberCheck = document.getElementById('remember-check');
+
+const REMEMBER_KEY = 'sgm_portal_username';
+
+// ---------- MUSICIAN MODE (mini portal for a group to grab recordings) ----------
+// URL pattern: index.html?musicians=SLUG  (optionally &code=ACCESSCODE for a
+// one-click link that auto-fills and auto-submits the access code)
+const musicianSlug = new URLSearchParams(window.location.search).get('musicians');
+const musicianCodeParam = new URLSearchParams(window.location.search).get('code');
+let musicianClient = null;
+let autoUnlockPending = false;
+if (musicianSlug && CLIENTS[musicianSlug] && CLIENTS[musicianSlug].musicianCode) {
+  musicianMode = true;
+  musicianClient = CLIENTS[musicianSlug];
+  document.getElementById('gate-title').innerHTML = 'Sarah Griego Music<br>Musician Access';
+  document.getElementById('user-field-wrap').style.display = 'none';
+  document.getElementById('remember-wrap').style.display = 'none';
+  pwInput.placeholder = 'Access Code';
+  if (musicianCodeParam) {
+    pwInput.value = musicianCodeParam;
+    autoUnlockPending = true;
+  }
+}
+
+function findClientByUsername(username) {
+  const u = username.trim().toLowerCase();
+  for (const key in CLIENTS) {
+    if ((CLIENTS[key].username || '').toLowerCase() === u) {
+      return CLIENTS[key];
+    }
+  }
+  return null;
+}
+
+let welcomeTimers = [];
+
+function dismissWelcome() {
+  welcomeTimers.forEach(clearTimeout);
+  welcomeTimers = [];
+  const overlay = document.getElementById('welcome-overlay');
+  overlay.classList.add('fade-out');
+  const t = setTimeout(function(){
+    overlay.classList.remove('show', 'fade-out');
+  }, 600);
+  welcomeTimers.push(t);
+}
+
+function showPortal(client, isMusician) {
+  if (isMusician) {
+    renderMusicianPortal(client);
+  } else {
+    renderPortal(client);
+  }
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('portal').style.display = 'block';
+
+  const overlay = document.getElementById('welcome-overlay');
+  const greeting = isMusician ? ('Hi ' + (client.groupName || client.name) + '!') : ('Welcome, ' + client.name.split(' ')[0] + '!');
+  document.getElementById('welcome-text').innerHTML = greeting.replace(/®/g, '<span class="trademark-sym">®</span>');
+  document.getElementById('welcome-close').style.display = 'flex';
+  overlay.classList.remove('fade-out');
+  overlay.classList.add('show');
+  const t = setTimeout(dismissWelcome, 1400);
+  welcomeTimers.push(t);
+}
+
+document.getElementById('welcome-close').addEventListener('click', dismissWelcome);
+
+function tryUnlock() {
+  if (musicianMode) {
+    if (musicianClient && pwInput.value === musicianClient.musicianCode) {
+      showPortal(musicianClient, true);
+    } else {
+      gateError.textContent = "Incorrect access code. Please try again.";
+      pwInput.value = '';
+      pwInput.focus();
+    }
+    return;
+  }
+  const client = findClientByUsername(userInput.value);
+  if (client && pwInput.value === client.password) {
+    if (rememberCheck.checked) {
+      try { localStorage.setItem(REMEMBER_KEY, client.username); } catch (e) {}
+    }
+    showPortal(client, false);
+  } else {
+    gateError.textContent = "Incorrect username or password. Please try again.";
+    pwInput.value = '';
+    pwInput.focus();
+  }
+}
+
+function logout() {
+  try { localStorage.removeItem(REMEMBER_KEY); } catch (e) {}
+  if (musicianMode) {
+    // The one-click share link carries the access code right in the URL
+    // (?musicians=SLUG&code=...). A plain reload would re-read that code
+    // and silently log back in — so strip it from the address bar first
+    // (without navigating), then reload onto the bare access-code gate.
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('code')) {
+      url.searchParams.delete('code');
+      history.replaceState(null, '', url.toString());
+    }
+  }
+  window.location.reload();
+}
+
+function signOut() {
+  welcomeTimers.forEach(clearTimeout);
+  welcomeTimers = [];
+  const overlay = document.getElementById('welcome-overlay');
+  document.getElementById('welcome-text').textContent = 'See ya later!';
+  document.getElementById('welcome-close').style.display = 'none';
+  overlay.classList.remove('fade-out');
+  overlay.classList.add('show');
+  const t = setTimeout(logout, 1200);
+  welcomeTimers.push(t);
+}
+
+pwSubmit.addEventListener('click', tryUnlock);
+userInput.addEventListener('keydown', function(e){
+  if (e.key === 'Enter') tryUnlock();
+});
+pwInput.addEventListener('keydown', function(e){
+  if (e.key === 'Enter') tryUnlock();
+});
+
+// Auto-unlock if a remembered username is stored on this device
+// (skipped in musician mode — that gate always requires the access code)
+(function checkRemembered() {
+  if (musicianMode) return;
+  let savedUsername = null;
+  try { savedUsername = localStorage.getItem(REMEMBER_KEY); } catch (e) {}
+  if (savedUsername) {
+    const client = findClientByUsername(savedUsername);
+    if (client) showPortal(client, false);
+  }
+})();
+
+// Auto-unlock musician mode if the URL came from a "one-click" share link
+// (?musicians=SLUG&code=CODE) — runs down here so every variable and
+// function it depends on (welcomeTimers, tryUnlock, etc.) already exists.
+if (autoUnlockPending) {
+  tryUnlock();
+}
+
+function renderPortal(client) {
+  document.getElementById('portal-title').textContent = client.name;
+  document.getElementById('portal-sub').textContent = client.heroSub || '';
+
+  const updatedEl = document.getElementById('portal-updated');
+  if (client.updatedAt) {
+    updatedEl.textContent = `Updated ${client.updatedAt}`;
+    updatedEl.style.display = 'block';
+  } else {
+    updatedEl.style.display = 'none';
+  }
+
+  const logoEl = document.getElementById('portal-logo');
+  if (client.logo) {
+    logoEl.src = client.logo;
+    logoEl.alt = client.name + ' logo';
+    logoEl.style.display = 'block';
+  } else {
+    logoEl.src = '';
+    logoEl.style.display = 'none';
+  }
+
+  currentWorks = client.works || [];
+
+  const worksList = document.getElementById('works-list');
+  worksList.innerHTML = (client.works || []).map((work, i) => `
+    <div class="work" id="work-${i}">
+      <div class="work-header" onclick="toggleWork(${i})">
+        <div>
+          <div class="work-title">${work.title}</div>
+          ${work.sub ? `<div class="work-sub">${work.sub}</div>` : ''}
+        </div>
+        <div class="work-toggle">+</div>
+      </div>
+      <div class="work-body">
+        ${(work.audio && work.audio.length) ? `
+          <ul class="work-audio">
+            ${work.audio.map(track => `
+              <li>
+                <div class="audio-title">${track.title}</div>
+                <audio controls preload="none" src="${track.url}"></audio>
+              </li>
+            `).join('')}
+          </ul>
+        ` : ''}
+        <ul class="work-parts">
+          ${(work.parts || []).map(part => `
+            <li>
+              <div>
+                <div class="part-name">${part.title}</div>
+                ${part.sub ? `<div class="part-sub">${part.sub}</div>` : ''}
+              </div>
+              <a class="dl-btn" href="${part.url}" rel="noopener">Download ↓</a>
+            </li>
+          `).join('')}
+        </ul>
+        ${work.bundleUrl ? `<a class="bundle-btn-sm" href="${work.bundleUrl}" target="_blank" rel="noopener">Download All (PDFs) — ${work.title} ↓</a>` : ''}
+        ${work.bundleUrl ? `<a class="bundle-btn-sm" href="${work.bundleUrl}${work.bundleUrl.indexOf('?') > -1 ? '&' : '?'}type=audio" target="_blank" rel="noopener">Download Audio — ${work.title} ↓</a>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  const fin = client.financials || { pending: [], paid: [] };
+  renderFinCol('fin-pending', fin.pending, 'Nothing pending.');
+  renderFinCol('fin-paid', fin.paid, 'Nothing paid yet.');
+  document.getElementById('financials-section').style.display = '';
+  if ((!fin.pending || fin.pending.length === 0) && (!fin.paid || fin.paid.length === 0) && !client.showFinancials) {
+    document.getElementById('financials-section').style.display = 'none';
+  }
+
+  // Full portal always shows every contact row, including remittance.
+  const remitRow = document.getElementById('remittance-row');
+  if (remitRow) remitRow.style.display = '';
+
+  // Offer the "share with musicians" button/box only if this client has
+  // a musician access code configured, and only in the full client portal.
+  const shareBtn = document.getElementById('musician-share-btn');
+  const shareBox = document.getElementById('musician-share-box');
+  if (client.musicianCode && client.slug) {
+    shareBtn.style.display = 'inline-block';
+    const link = `${window.location.origin}${window.location.pathname}?musicians=${client.slug}`;
+    const allInOneLink = `${link}&code=${encodeURIComponent(client.musicianCode)}`;
+    document.getElementById('musician-share-link').value = link;
+    document.getElementById('musician-share-code').value = client.musicianCode;
+    document.getElementById('musician-share-code-label').style.display = 'block';
+    document.getElementById('musician-share-code-row').style.display = 'flex';
+    document.getElementById('musician-share-all').value = allInOneLink;
+    document.getElementById('musician-share-all-label').style.display = 'block';
+    document.getElementById('musician-share-all-row').style.display = 'flex';
+  } else {
+    shareBtn.style.display = 'none';
+    shareBox.style.display = 'none';
+  }
+
+  // Full portal keeps the "thank you" sign-off — only the audio-only
+  // musician mini-portal hides it (see renderMusicianPortal).
+  document.getElementById('thanks-block').style.display = '';
+
+  document.title = `${client.name} — Parker Compositions Portal`;
+}
+
+function toggleMusicianShareBox() {
+  const box = document.getElementById('musician-share-box');
+  box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+}
+
+function copyMusicianField(id) {
+  const el = document.getElementById(id);
+  el.select();
+  el.setSelectionRange(0, 99999);
+  try {
+    navigator.clipboard.writeText(el.value);
+  } catch (e) {
+    document.execCommand('copy');
+  }
+}
+
+// ---------- MUSICIAN MINI-PORTAL ----------
+// Audio-only view for a client to share with their group: greeting by
+// group name, Commissioned Works tab (audio + search, no parts/downloads
+// of PDFs), Contact Sarah minus Remittance, no Financials section at all.
+function renderMusicianPortal(client) {
+  const displayName = client.groupName || client.name;
+  document.getElementById('portal-title').innerHTML = displayName.replace(/®/g, '<span class="trademark-sym">®</span>');
+  document.getElementById('portal-sub').textContent = `Recordings for ${client.groupName || client.name} to use for practice.`;
+
+  const updatedEl = document.getElementById('portal-updated');
+  if (client.updatedAt) {
+    updatedEl.textContent = `Updated ${client.updatedAt}`;
+    updatedEl.style.display = 'block';
+  } else {
+    updatedEl.style.display = 'none';
+  }
+
+  const logoEl = document.getElementById('portal-logo');
+  if (client.logo) {
+    logoEl.src = client.logo;
+    logoEl.alt = (client.groupName || client.name) + ' logo';
+    logoEl.style.display = 'block';
+  } else {
+    logoEl.src = '';
+    logoEl.style.display = 'none';
+  }
+
+  // Never show the share button/box inside the mini-portal itself.
+  document.getElementById('musician-share-btn').style.display = 'none';
+  document.getElementById('musician-share-box').style.display = 'none';
+
+  const worksWithAudio = (client.works || []).filter(w => w.audio && w.audio.length);
+  currentWorks = worksWithAudio;
+
+  const worksList = document.getElementById('works-list');
+  worksList.innerHTML = worksWithAudio.map((work, i) => `
+    <div class="work" id="work-${i}">
+      <div class="work-header" onclick="toggleWork(${i})">
+        <div>
+          <div class="work-title">${work.title}</div>
+          ${work.sub ? `<div class="work-sub">${work.sub}</div>` : ''}
+        </div>
+        <div class="work-toggle">+</div>
+      </div>
+      <div class="work-body">
+        <ul class="work-audio">
+          ${work.audio.map(track => `
+            <li>
+              <div class="audio-title">${track.title}</div>
+              <audio controls preload="none" src="${track.url}"></audio>
+            </li>
+          `).join('')}
+        </ul>
+        ${work.bundleUrl ? `<a class="bundle-btn-sm" href="${work.bundleUrl}${work.bundleUrl.indexOf('?') > -1 ? '&' : '?'}type=audio" target="_blank" rel="noopener">Download Audio — ${work.title} ↓</a>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  // Musician mini-portal never shows Financials at all.
+  document.getElementById('financials-section').style.display = 'none';
+
+  // Contact Sarah stays, minus the Remittance row.
+  const remitRow = document.getElementById('remittance-row');
+  if (remitRow) remitRow.style.display = 'none';
+
+  // No "thank you for your business" sign-off — musicians in the group
+  // aren't the ones paying for anything, that message reads oddly here.
+  document.getElementById('thanks-block').style.display = 'none';
+
+  document.title = `${client.groupName || client.name} — Recordings`;
+}
+
+function toggleWork(i) {
+  const work = document.getElementById('work-' + i);
+  const body = work.querySelector('.work-body');
+  const isOpening = !work.classList.contains('open');
+  work.classList.toggle('open');
+  // Set max-height to the panel's actual content height rather than a
+  // fixed guess, so long parts lists (like Honeysuckle Rose) never get
+  // clipped no matter how many parts get added later.
+  body.style.maxHeight = isOpening ? body.scrollHeight + 'px' : '0px';
+}
+
+function toggleSearch() {
+  const wrap = document.getElementById('search-wrap');
+  const input = document.getElementById('search-input');
+  wrap.classList.toggle('open');
+  if (wrap.classList.contains('open')) {
+    input.focus();
+  } else {
+    input.value = '';
+    filterGeneral('');
+  }
+}
+
+// Chart search — lives inside the Commissioned Works section, filters
+// just the pieces/parts. Independent from the generic top search.
+function filterWorks(query) {
+  const q = query.trim().toLowerCase();
+  let anyVisible = false;
+
+  currentWorks.forEach((work, i) => {
+    const el = document.getElementById('work-' + i);
+    if (!el) return;
+
+    if (!q) {
+      el.style.display = '';
+      anyVisible = true;
+      return;
+    }
+
+    const titleMatch = work.title.toLowerCase().includes(q);
+    const partMatch = (work.parts || []).some(p => p.title.toLowerCase().includes(q));
+    const isMatch = titleMatch || partMatch;
+
+    el.style.display = isMatch ? '' : 'none';
+    if (isMatch) {
+      anyVisible = true;
+      if (!titleMatch && partMatch) {
+        el.classList.add('open');
+        const body = el.querySelector('.work-body');
+        if (body) body.style.maxHeight = body.scrollHeight + 'px';
+      }
+    }
+  });
+
+  document.getElementById('search-empty').style.display = (!anyVisible && q) ? 'block' : 'none';
+}
+
+const chartSearchInputEl = document.getElementById('chart-search-input');
+if (chartSearchInputEl) {
+  chartSearchInputEl.addEventListener('input', function() {
+    filterWorks(chartSearchInputEl.value);
+  });
+}
+
+// Generic top search — for invoice numbers, contact details (phone, email,
+// etc.), not pieces/parts. Searches Financials and Contact Sarah, and
+// auto-opens whichever section(s) have a match while a query is active.
+function filterGeneral(query) {
+  const q = query.trim().toLowerCase();
+
+  const contactSection = document.getElementById('contact-section');
+  const contactItems = document.querySelectorAll('#contact-section .contact-list li');
+  let contactMatch = false;
+  contactItems.forEach(li => {
+    if (!q) { li.style.display = ''; return; }
+    const isMatch = li.textContent.toLowerCase().includes(q);
+    li.style.display = isMatch ? '' : 'none';
+    if (isMatch) contactMatch = true;
+  });
+
+  const financialsSection = document.getElementById('financials-section');
+  const finItems = document.querySelectorAll('#fin-pending li, #fin-paid li');
+  let finMatch = false;
+  finItems.forEach(li => {
+    if (li.classList.contains('fin-empty')) return;
+    if (!q) { li.style.display = ''; return; }
+    const isMatch = li.textContent.toLowerCase().includes(q);
+    li.style.display = isMatch ? '' : 'none';
+    if (isMatch) finMatch = true;
+  });
+
+  if (!q) {
+    contactSection.classList.add('collapsed');
+    financialsSection.classList.add('collapsed');
+    return;
+  }
+
+  contactSection.classList.toggle('collapsed', !contactMatch);
+  financialsSection.classList.toggle('collapsed', !finMatch);
+}
+
+const searchInputEl = document.getElementById('search-input');
+if (searchInputEl) {
+  searchInputEl.addEventListener('input', function() {
+    filterGeneral(searchInputEl.value);
+  });
+}
+
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+function renderFinCol(elId, items, emptyText) {
+  const el = document.getElementById(elId);
+  const isPending = elId === 'fin-pending';
+
+  if (!items || items.length === 0) {
+    el.innerHTML = `<li class="fin-empty">${emptyText}</li>`;
+    if (isPending) updatePendingBadge(0);
+    return;
+  }
+
+  if (isPending) updatePendingBadge(items.length);
+
+  el.innerHTML = items.map(item => {
+    let payBtn = '';
+    if (isPending && item.amount && !item.noPayButton) {
+      // item.payUrl lets a specific item override with a real, working PayPal link
+      // (the site-wide paypal.biz/[amount] auto-link is broken — PayPal retired
+      // PayPal.Me for business accounts on 2026-07-30). Prefer it when present.
+      let payUrl = item.payUrl;
+      if (!payUrl) {
+        // Strip everything but digits and a decimal point so "$1,234.50" -> "1234.50"
+        const numericAmount = item.amount.replace(/[^0-9.]/g, '');
+        payUrl = `https://www.paypal.biz/ParkerCompositions/${numericAmount}`;
+      }
+      payBtn = `<a class="fin-pay-btn" href="${payUrl}" target="_blank" rel="noopener">Pay Now ↗</a>`;
+    }
+    const paidTag = !isPending ? `<span class="fin-paid-tag">Paid ✓</span>` : '';
+
+    return `
+    <li>
+      <div class="fin-row-top">
+        <div class="fin-name">${item.name}</div>
+        ${item.amount ? `<div class="fin-amount">${item.amount}</div>` : ''}
+      </div>
+      ${item.sub ? `<div class="fin-sub">${item.sub}</div>` : ''}
+      ${item.note ? `<div class="fin-note">${item.note}</div>` : ''}
+      <div class="fin-row-bottom">
+        ${item.invoiceUrl ? `<a class="fin-link" href="${item.invoiceUrl}" target="_blank" rel="noopener">View invoice ↗</a>` : ''}
+        ${item.receiptUrl ? `<a class="fin-link" href="${item.receiptUrl}" target="_blank" rel="noopener">View receipt ↗</a>` : ''}
+        ${(!item.invoiceUrl && !item.receiptUrl && item.url) ? `<a class="fin-link" href="${item.url}" target="_blank" rel="noopener">View receipt ↗</a>` : ''}
+        ${payBtn}
+        ${paidTag}
+      </div>
+    </li>
+  `;
+  }).join('');
+}
+
+function updatePendingBadge(count) {
+  // Standalone "Pending" column badge (inside Financials, not wrapped).
+  const badge = document.getElementById('pending-badge');
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Header badge + "pending invoice(s)" label — kept together in one
+  // wrapper so they always sit on the same line, side by side.
+  const headerWrap = document.getElementById('financials-header-badge-wrap');
+  const headerBadge = document.getElementById('financials-header-badge');
+  const headerLabel = document.getElementById('financials-header-badge-label');
+  if (headerWrap && headerBadge && headerLabel) {
+    if (count > 0) {
+      headerBadge.textContent = count;
+      headerLabel.textContent = count === 1 ? 'pending invoice' : 'pending invoices';
+      headerWrap.style.display = 'inline-flex';
+    } else {
+      headerWrap.style.display = 'none';
+    }
+  }
+}
+</script>
+
+</body>
+</html>
