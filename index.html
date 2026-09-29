@@ -840,6 +840,133 @@
   .cw-status{font-weight:500;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:#f2b544;border:1px solid #f2b544;padding:3px 8px;white-space:nowrap;}
   .cw-note{font-weight:300;font-size:0.82rem;color:#ddd;margin-top:6px;}
   .cw-due{font-weight:300;font-size:0.78rem;color:#999;margin-top:3px;}
+  /* =====================================================================
+     GREEN ROOM THEME (Sep 29, 2026): restyles the portal to match Sarah's
+     Green Room. Styling only: every client, file, link and feature above
+     is unchanged. Remove this block to go back to the previous look.
+     ===================================================================== */
+  :root{
+    --gr-red:#E3261F; --gr-gold:#F2B544; --gr-green:#9CBF9B; --gr-ink:#0A0A0A;
+    --gr-card:#141414; --gr-line:#2A2A2A; --gr-text:#EDE8DE; --gr-mute:#9A948A;
+  }
+  body{
+    background:var(--gr-ink);
+    background-image:radial-gradient(1200px 520px at 80% -10%, rgba(227,38,31,.16), transparent 60%), radial-gradient(900px 600px at -10% 110%, rgba(227,38,31,.08), transparent 60%);
+    background-attachment:fixed;
+    color:var(--gr-text);
+  }
+
+  /* Sign-in: stage photo, poster type, dark glass card with the red offset */
+  #gate{
+    background:linear-gradient(180deg, rgba(10,10,10,.45) 0%, rgba(10,10,10,.85) 55%, #0A0A0A 100%), url('assets/hero.jpg') center 30% / cover no-repeat;
+    align-items:flex-end;
+    padding:24px 16px 10vh;
+  }
+  .gate-box{
+    background:rgba(14,14,14,.84);
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    border:1px solid var(--gr-line);
+    border-radius:18px;
+    padding:30px 26px 24px;
+    box-shadow:10px 10px 0 -2px var(--gr-red);
+    text-align:left;
+  }
+  .gate-box h1{color:#fff;font-size:clamp(1.5rem,6vw,2.1rem);line-height:1.35;margin-bottom:22px;}
+  #gate input{border:1px solid #2E2E2E;border-radius:10px;background:var(--gr-ink);font-size:16px;}
+  #gate input:focus{border-color:var(--gr-red);box-shadow:0 0 0 3px rgba(227,38,31,.25);}
+  #gate button{border-radius:999px;background:var(--gr-red);padding:15px 16px;}
+  #gate-error{color:#FF6B64;}
+  #remember-check{accent-color:var(--gr-red);}
+
+  #welcome-overlay{background:var(--gr-ink);}
+
+  /* Header: stage photo fading into black, eyebrow with the red dot */
+  header.hero{
+    background:linear-gradient(180deg, rgba(10,10,10,.30) 0%, rgba(10,10,10,.72) 55%, #0A0A0A 100%), url('assets/hero.jpg') center 28% / cover no-repeat;
+    border-bottom:none;
+    padding:92px 24px 44px;
+    overflow:hidden;
+  }
+  header.hero .eyebrow{color:#CFC9BE;letter-spacing:.22em;display:inline-flex;align-items:center;gap:10px;}
+  header.hero .eyebrow::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--gr-red);box-shadow:0 0 0 4px rgba(227,38,31,.22);}
+  header.hero h1{color:#fff;font-size:clamp(2rem,7vw,3.2rem);line-height:1.25;text-shadow:0 2px 24px rgba(0,0,0,.5);}
+  header.hero p{color:#E4DED3;}
+  header.hero .updated-stamp{color:var(--gr-red);text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;margin-top:12px;}
+  .search-toggle,.signout-toggle{background:rgba(14,14,14,.78);border:1px solid #2E2E2E;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+  .search-toggle:hover,.signout-toggle:hover{background:var(--gr-red);border-color:var(--gr-red);}
+  .search-input{background:rgba(14,14,14,.9);border:1px solid #2E2E2E;}
+  .musician-share-btn{border:1px solid #444;border-radius:0;text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;padding:11px 18px;background:rgba(14,14,14,.6);}
+  .musician-share-btn:hover{opacity:1;border-color:var(--gr-red);background:var(--gr-red);}
+  .musician-share-box{background:var(--gr-card);border:1px solid var(--gr-line);border-radius:0;box-shadow:8px 8px 0 -2px var(--gr-red);}
+  .musician-share-label{color:var(--gr-gold);letter-spacing:.14em;}
+  .musician-share-row input{background:var(--gr-ink);border:1px solid #2E2E2E;border-radius:0;font-size:16px;}
+  .musician-share-row button{background:var(--gr-red);border-radius:0;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;}
+
+  /* Main frame: dark panel with the red top edge and offset, like the Green Room */
+  main{
+    max-width:880px;
+    margin:0 auto 40px;
+    padding:28px 22px 18px;
+    background:rgba(17,17,17,.94);
+    border-top:3px solid var(--gr-red);
+    box-shadow:10px 10px 0 -2px rgba(160,20,17,.9);
+  }
+  @media (max-width:600px){ main{margin:0 12px 32px;padding:18px 12px 12px;box-shadow:6px 6px 0 -2px rgba(160,20,17,.9);} }
+
+  /* Sections: folding panels with gold, tracked headings */
+  .dark-card{background:var(--gr-card);border:1px solid var(--gr-line);border-radius:0;margin:0 0 14px;padding:0 20px;}
+  section{margin-bottom:14px;}
+  .dark-card h2{justify-content:flex-start;padding:20px 44px 20px 0;font-family:'Poppins',sans-serif;font-weight:500;font-size:.82rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gr-gold);}
+  .dark-card .title-stack{align-items:flex-start;text-align:left;}
+  .dark-card .title-swoosh{display:none;}
+  .dark-card .section-toggle{width:30px;height:30px;background:transparent;border:1px solid #3A3A3A;color:var(--gr-text);font-weight:400;}
+  .dark-card:not(.collapsed) .section-toggle{border-color:var(--gr-red);color:#fff;background:var(--gr-red);}
+  .dark-card .section-body{border-top:1px solid var(--gr-line);padding:22px 0 26px;}
+  .dark-card:not(.collapsed){border-left:3px solid var(--gr-red);}
+  .pending-badge-wrap{margin-top:8px;}
+
+  /* Works */
+  .chart-search-input{background:var(--gr-ink);border:1px solid #2E2E2E;border-radius:0;font-size:16px;}
+  .chart-search-input:focus{border-color:var(--gr-red);}
+  .work{border-top:1px solid var(--gr-line);}
+  .work:last-child{border-bottom:1px solid var(--gr-line);}
+  .work-title{color:#FBFAF8;}
+  .work-sub,.part-sub{color:var(--gr-mute);}
+  .work-toggle{background:transparent;border:1px solid #3A3A3A;color:var(--gr-text);}
+  .work.open .work-toggle{background:var(--gr-red);border-color:var(--gr-red);}
+  .work.open{background:rgba(255,255,255,.015);}
+  .work-audio,.work-parts li{border-top-color:#222;}
+  .audio-title,.part-name{color:#EDE8DE;}
+  .dl-btn{background:transparent;color:var(--gr-text);border:1px solid #3A3A3A;border-radius:0;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;padding:9px 14px;}
+  .dl-btn:hover{background:var(--gr-red);border-color:var(--gr-red);color:#fff;}
+  .bundle-btn-sm{border-radius:0;background:var(--gr-red);text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;padding:12px 16px;}
+
+  /* Financials */
+  .fin-col h3{letter-spacing:.18em;border-bottom-width:1px;}
+  .fin-col.pending h3{color:#FF6B64;border-bottom-color:#FF6B64;}
+  .fin-col.paid h3{color:var(--gr-green);border-bottom-color:var(--gr-green);}
+  .fin-col.paid .fin-amount{color:var(--gr-green);}
+  .fin-col.pending .fin-amount{color:#FF6B64;}
+  .fin-list li{border-bottom-color:#222;}
+  .fin-pay-btn{border-radius:0;background:var(--gr-red);text-transform:uppercase;letter-spacing:.1em;font-size:.7rem;padding:8px 14px;}
+  .fin-paid-tag{color:var(--gr-green);border:1px solid var(--gr-green);padding:3px 9px;border-radius:999px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;}
+  .fin-link{color:#EDE8DE;text-underline-offset:3px;}
+  .pending-badge{background:#FF6B64;}
+  .pending-badge-label{color:#FF6B64;}
+
+  /* Current work */
+  .cw-status{color:var(--gr-gold);border-color:var(--gr-gold);}
+
+  /* Contact + thanks + footer */
+  .contact-list li{border-bottom-color:#222 !important;}
+  .contact-label{color:var(--gr-mute) !important;letter-spacing:.14em;}
+  .contact-list a{color:#FBFAF8;}
+  .contact-list a:hover{color:var(--gr-red);}
+  .thanks-block{background:transparent !important;border-top:1px solid var(--gr-line) !important;border-bottom:none !important;border-radius:0 !important;margin:18px 0 0 !important;}
+  .thanks-text{font-family:'Rock Salt',cursive;color:#fff;}
+  footer{background:transparent;border-top:1px solid var(--gr-line);}
+  footer strong{color:var(--gr-red);}
+  @media (max-width:600px){ header.hero{padding-top:78px;} }
 </style>
 </head>
 <body>
@@ -921,14 +1048,14 @@
 
   <main>
     <section id="current-work-section" class="dark-card collapsed" style="display:none;">
-      <h2 onclick="toggleSection('current-work-section')"><span class="title-stack">Current Work<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
+      <h2 onclick="toggleSection('current-work-section')"><span class="title-stack">Work in progress<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
       <div class="section-body">
         <ul class="cw-list" id="current-work-list"></ul>
       </div>
     </section>
 
     <section id="works-section" class="dark-card collapsed">
-      <h2 onclick="toggleSection('works-section')"><span class="title-stack">Commissioned Works<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
+      <h2 onclick="toggleSection('works-section')"><span class="title-stack">Completed works<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
       <div class="section-body">
         <div class="chart-search-wrap">
           <input type="text" id="chart-search-input" class="chart-search-input" placeholder="Find a chart...">
