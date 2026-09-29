@@ -831,6 +831,15 @@
     font-size:0.35em;
     vertical-align:super;
   }
+  /* Current work (live from the Green Room) */
+  .cw-list{list-style:none;}
+  .cw-list li{padding:14px 0;border-bottom:1px solid #2a2a2a;}
+  .cw-list li:last-child{border-bottom:none;}
+  .cw-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .cw-title{font-weight:500;font-size:0.92rem;color:var(--white);}
+  .cw-status{font-weight:500;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:#f2b544;border:1px solid #f2b544;padding:3px 8px;white-space:nowrap;}
+  .cw-note{font-weight:300;font-size:0.82rem;color:#ddd;margin-top:6px;}
+  .cw-due{font-weight:300;font-size:0.78rem;color:#999;margin-top:3px;}
 </style>
 </head>
 <body>
@@ -911,6 +920,13 @@
   </header>
 
   <main>
+    <section id="current-work-section" class="dark-card collapsed" style="display:none;">
+      <h2 onclick="toggleSection('current-work-section')"><span class="title-stack">Current Work<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
+      <div class="section-body">
+        <ul class="cw-list" id="current-work-list"></ul>
+      </div>
+    </section>
+
     <section id="works-section" class="dark-card collapsed">
       <h2 onclick="toggleSection('works-section')"><span class="title-stack">Commissioned Works<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
       <div class="section-body">
@@ -1358,12 +1374,55 @@ function dismissWelcome() {
   welcomeTimers.push(t);
 }
 
+// ---------- LIVE UPDATES FROM THE GREEN ROOM ----------
+// Sarah edits clients in the Green Room (Solo admin -> Client Work) and taps
+// "Send to portal". That publishes a feed per client; when it exists it replaces
+// this file's welcome text, "Updated" line, financials and works, and adds the
+// Current Work list. If the feed can't be reached, the portal shows what's below.
+const FEED_URL = 'https://fun-oclock-tour-admin-portal.netlify.app/.netlify/functions/client-feed';
+function applyFeed(client, feed) {
+  const c = Object.assign({}, client);
+  if (feed.heroSub) c.heroSub = feed.heroSub;
+  if (feed.updatedAt) c.updatedAt = feed.updatedAt;
+  if (feed.financials) { c.financials = feed.financials; if ((feed.financials.pending || []).length || (feed.financials.paid || []).length) c.showFinancials = true; }
+  if (Array.isArray(feed.works) && feed.works.length) c.works = feed.works;
+  c.commissions = feed.commissions || [];
+  return c;
+}
+function renderCurrentWork(client) {
+  const sec = document.getElementById('current-work-section');
+  const list = client.commissions || [];
+  if (!sec) return;
+  if (!list.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  const esc = (t) => String(t || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const fmtDue = (d) => { const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); };
+  document.getElementById('current-work-list').innerHTML = list.map((w) => `
+    <li>
+      <div class="cw-top"><div class="cw-title">${esc(w.title)}</div>${w.status ? `<span class="cw-status">${esc(w.status)}</span>` : ''}</div>
+      ${w.note ? `<div class="cw-note">${esc(w.note)}</div>` : ''}
+      ${w.due ? `<div class="cw-due">Expected ${esc(fmtDue(w.due))}</div>` : ''}
+    </li>`).join('');
+}
+function loadFeed(client, isMusician) {
+  if (!client || !client.slug || typeof fetch !== 'function') return;
+  fetch(FEED_URL + '?slug=' + encodeURIComponent(client.slug), { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      if (!d || !d.feed) return;
+      const merged = applyFeed(client, d.feed);
+      if (isMusician) { renderMusicianPortal(merged); } else { renderPortal(merged); renderCurrentWork(merged); }
+    })
+    .catch(() => {});
+}
+
 function showPortal(client, isMusician) {
   if (isMusician) {
     renderMusicianPortal(client);
   } else {
     renderPortal(client);
   }
+  loadFeed(client, isMusician);
   document.getElementById('gate').style.display = 'none';
   document.getElementById('portal').style.display = 'block';
 
