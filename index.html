@@ -957,6 +957,8 @@
   /* Current work */
   .cw-status{color:var(--gr-gold);border-color:var(--gr-gold);}
   .cw-note{white-space:pre-line;}
+  .cw-link{display:inline-block;margin-top:10px;padding:9px 14px;border:1px solid #3A3A3A;color:var(--gr-text);text-decoration:none;font-weight:500;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;}
+  .cw-link:hover{background:var(--gr-red);border-color:var(--gr-red);color:#fff;}
 
   /* Contact + thanks + footer */
   .contact-list li{border-bottom-color:#222 !important;}
@@ -1530,6 +1532,7 @@ function renderCurrentWork(client) {
       <div class="cw-top"><div class="cw-title">${esc(w.title)}</div>${w.status ? `<span class="cw-status">${esc(w.status)}</span>` : ''}</div>
       ${w.note ? `<div class="cw-note">${esc(w.note)}</div>` : ''}
       ${w.due ? `<div class="cw-due">Expected ${esc(fmtDue(w.due))}</div>` : ''}
+      ${w.link && /^https:\/\//.test(w.link) ? `<a class="cw-link" href="${esc(w.link)}" target="_blank" rel="noopener">${esc(w.linkLabel || 'Open link')} ↗</a>` : ''}
     </li>`).join('');
 }
 function loadFeed(client, isMusician) {
