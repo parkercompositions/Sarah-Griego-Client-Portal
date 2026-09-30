@@ -1486,9 +1486,11 @@ const musicianSlug = new URLSearchParams(window.location.search).get('musicians'
 const musicianCodeParam = new URLSearchParams(window.location.search).get('code');
 let musicianClient = null;
 let autoUnlockPending = false;
-if (musicianSlug && CLIENTS[musicianSlug] && CLIENTS[musicianSlug].musicianCode) {
+// Clients added in the Green Room aren't in CLIENTS; their musician code is checked there.
+const remoteMusician = !!(musicianSlug && !CLIENTS[musicianSlug] && /^[a-z0-9-]+$/i.test(musicianSlug));
+if ((musicianSlug && CLIENTS[musicianSlug] && CLIENTS[musicianSlug].musicianCode) || remoteMusician) {
   musicianMode = true;
-  musicianClient = CLIENTS[musicianSlug];
+  musicianClient = remoteMusician ? null : CLIENTS[musicianSlug];
   document.getElementById('gate-title').innerHTML = 'Sarah Griego Music<br>Musician Access';
   document.getElementById('user-field-wrap').style.display = 'none';
   document.getElementById('remember-wrap').style.display = 'none';
@@ -1532,6 +1534,7 @@ function applyFeed(client, feed) {
   const c = Object.assign({}, client);
   if (feed.heroSub) c.heroSub = feed.heroSub;
   if (feed.payUrl) c.payUrl = feed.payUrl;
+  if (c.token && feed.musicianCode) c.musicianCode = feed.musicianCode;
   if (c.token && feed.name) c.name = feed.name;
   if (c.token && feed.groupName) c.groupName = feed.groupName;
   if (feed.updatedAt) c.updatedAt = feed.updatedAt;
@@ -1558,7 +1561,7 @@ function renderCurrentWork(client) {
 }
 function loadFeed(client, isMusician, done) {
   if (!client || !client.slug || typeof fetch !== 'function') { if (done) done(); return; }
-  fetch(FEED_URL + '?slug=' + encodeURIComponent(client.slug) + (client.token ? '&t=' + encodeURIComponent(client.token) : ''), { cache: 'no-store' })
+  fetch(FEED_URL + '?slug=' + encodeURIComponent(client.slug) + (client.token ? '&t=' + encodeURIComponent(client.token) : '') + (client.mcode ? '&m=' + encodeURIComponent(client.mcode) : ''), { cache: 'no-store' })
     .then((r) => { if (r.status === 401 && client.token) { try { localStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(SESSION_KEY); } catch (e) {} } return r.ok ? r.json() : null; })
     .then((d) => {
       if (!d || !d.feed) return;
@@ -1600,6 +1603,19 @@ function showPortal(client, isMusician) {
 document.getElementById('welcome-close').addEventListener('click', dismissWelcome);
 
 function tryUnlock() {
+  if (musicianMode && remoteMusician) {
+    const code = pwInput.value;
+    gateError.textContent = '';
+    fetch(FEED_URL + '?slug=' + encodeURIComponent(musicianSlug) + '&m=' + encodeURIComponent(code), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || !d.feed) throw new Error('no');
+        const f = d.feed;
+        showPortal({ slug: musicianSlug, mcode: code, name: f.name || f.groupName || '', groupName: f.groupName || '', updatedAt: f.updatedAt || '', works: f.works || [], financials: { pending: [], paid: [] } }, true);
+      })
+      .catch(() => { gateError.textContent = "Incorrect access code. Please try again."; pwInput.value = ''; pwInput.focus(); });
+    return;
+  }
   if (musicianMode) {
     if (musicianClient && pwInput.value === musicianClient.musicianCode) {
       showPortal(musicianClient, true);
