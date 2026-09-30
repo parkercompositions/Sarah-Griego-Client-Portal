@@ -1513,6 +1513,8 @@ const FEED_URL = 'https://fun-oclock-tour-admin-portal.netlify.app/.netlify/func
 function applyFeed(client, feed) {
   const c = Object.assign({}, client);
   if (feed.heroSub) c.heroSub = feed.heroSub;
+  if (c.token && feed.name) c.name = feed.name;
+  if (c.token && feed.groupName) c.groupName = feed.groupName;
   if (feed.updatedAt) c.updatedAt = feed.updatedAt;
   if (feed.financials) { c.financials = feed.financials; if ((feed.financials.pending || []).length || (feed.financials.paid || []).length) c.showFinancials = true; }
   if (Array.isArray(feed.works) && feed.works.length) c.works = feed.works;
@@ -1537,8 +1539,8 @@ function renderCurrentWork(client) {
 }
 function loadFeed(client, isMusician) {
   if (!client || !client.slug || typeof fetch !== 'function') return;
-  fetch(FEED_URL + '?slug=' + encodeURIComponent(client.slug), { cache: 'no-store' })
-    .then((r) => (r.ok ? r.json() : null))
+  fetch(FEED_URL + '?slug=' + encodeURIComponent(client.slug) + (client.token ? '&t=' + encodeURIComponent(client.token) : ''), { cache: 'no-store' })
+    .then((r) => { if (r.status === 401 && client.token) { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} } return r.ok ? r.json() : null; })
     .then((d) => {
       if (!d || !d.feed) return;
       const merged = applyFeed(client, d.feed);
@@ -1586,15 +1588,32 @@ function tryUnlock() {
       try { localStorage.setItem(REMEMBER_KEY, client.username); } catch (e) {}
     }
     showPortal(client, false);
-  } else {
-    gateError.textContent = "Incorrect username or password. Please try again.";
-    pwInput.value = '';
-    pwInput.focus();
+    return;
   }
+  // Clients added in the Green Room sign in through it.
+  gateError.textContent = '';
+  const u = userInput.value, p = pwInput.value, remember = rememberCheck.checked;
+  fetch(FEED_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'portal-login', username: u, password: p }) })
+    .then((r) => r.json().catch(() => ({})))
+    .then((d) => {
+      if (!d || !d.ok) throw new Error('no');
+      const c = sessionClient(d);
+      if (remember) { try { localStorage.setItem(SESSION_KEY, JSON.stringify(d)); } catch (e) {} }
+      showPortal(c, false);
+    })
+    .catch(() => {
+      gateError.textContent = "Incorrect username or password. Please try again.";
+      pwInput.value = '';
+      pwInput.focus();
+    });
+}
+const SESSION_KEY = 'sgm_portal_session';
+function sessionClient(d) {
+  return { slug: d.slug, username: d.username, token: d.token, name: d.name || d.groupName || d.username, groupName: d.groupName || '', heroSub: '', updatedAt: '', works: [], financials: { pending: [], paid: [] }, showFinancials: false };
 }
 
 function logout() {
-  try { localStorage.removeItem(REMEMBER_KEY); } catch (e) {}
+  try { localStorage.removeItem(REMEMBER_KEY); localStorage.removeItem(SESSION_KEY); } catch (e) {}
   if (musicianMode) {
     // The one-click share link carries the access code right in the URL
     // (?musicians=SLUG&code=...). A plain reload would re-read that code
@@ -1637,8 +1656,11 @@ pwInput.addEventListener('keydown', function(e){
   try { savedUsername = localStorage.getItem(REMEMBER_KEY); } catch (e) {}
   if (savedUsername) {
     const client = findClientByUsername(savedUsername);
-    if (client) showPortal(client, false);
+    if (client) { showPortal(client, false); return; }
   }
+  let session = null;
+  try { session = JSON.parse(localStorage.getItem('sgm_portal_session') || 'null'); } catch (e) {}
+  if (session && session.slug && session.token) showPortal(sessionClient(session), false);
 })();
 
 // Auto-unlock musician mode if the URL came from a "one-click" share link
