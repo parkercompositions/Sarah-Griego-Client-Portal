@@ -1880,6 +1880,7 @@ function toggleWork(i) {
   const work = document.getElementById('work-' + i);
   const body = work.querySelector('.work-body');
   const isOpening = !work.classList.contains('open');
+  if (!isOpening) pauseAudioIn(work);
   work.classList.toggle('open');
   // Set max-height to the panel's actual content height rather than a
   // fixed guess, so long parts lists (like Honeysuckle Rose) never get
@@ -1985,7 +1986,9 @@ if (searchInputEl) {
 }
 
 function toggleSection(id) {
-  document.getElementById(id).classList.toggle('collapsed');
+  const sec = document.getElementById(id);
+  sec.classList.toggle('collapsed');
+  if (sec.classList.contains('collapsed')) pauseAudioIn(sec);
 }
 
 function renderFinCol(elId, items, emptyText) {
@@ -2065,5 +2068,67 @@ function updatePendingBadge(count) {
 }
 </script>
 
+
+<div id="now-playing" class="now-playing" role="region" aria-label="Now playing" hidden>
+  <button type="button" class="np-btn" id="np-toggle" aria-label="Pause"></button>
+  <div class="np-text"><span class="np-eyebrow">Now playing</span><span class="np-title" id="np-title"></span></div>
+  <button type="button" class="np-show" id="np-show">Show</button>
+  <button type="button" class="np-close" id="np-close" aria-label="Stop">&times;</button>
+</div>
+<style>
+  .now-playing{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:12px;width:min(560px,calc(100% - 24px));padding:10px 12px;background:rgba(14,14,14,.94);color:#FBFAF8;border:1px solid #2E2E2E;border-left:3px solid var(--gr-red,#E3261F);box-shadow:0 10px 30px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-family:Poppins,sans-serif;}
+  .now-playing[hidden]{display:none;}
+  .np-btn{flex:0 0 38px;width:38px;height:38px;border-radius:50%;border:0;background:var(--gr-red,#E3261F);color:#fff;cursor:pointer;display:grid;place-items:center;}
+  .np-btn svg{width:16px;height:16px;fill:currentColor;}
+  .np-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .np-eyebrow{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#8A857C;}
+  .np-title{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .np-show,.np-close{background:transparent;border:1px solid #3A3A3A;color:#FBFAF8;font:500 11px Poppins,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:8px 10px;cursor:pointer;}
+  .np-close{font-size:18px;line-height:1;padding:4px 10px;letter-spacing:0;}
+  .np-show:hover,.np-close:hover{border-color:var(--gr-red,#E3261F);}
+  .work.np-here{outline:1px solid var(--gr-red,#E3261F);outline-offset:2px;transition:outline-color .6s;}
+</style>
+<script>
+// One recording at a time; a bar shows what's playing and where it is. Folding a
+// chart or section closed pauses anything playing inside it.
+(function(){
+  let current = null;
+  const bar = document.getElementById('now-playing');
+  const btn = document.getElementById('np-toggle');
+  const PLAY = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+  const PAUSE = '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+  function labelFor(a){
+    const li = a.closest('li'); const t = li && li.querySelector('.audio-title');
+    const w = a.closest('.work'); const wt = w && w.querySelector('.work-title');
+    return [wt && wt.textContent.trim(), t && t.textContent.trim()].filter(Boolean).join(' — ') || 'Recording';
+  }
+  function paint(){
+    if (!current || !document.body.contains(current)) { bar.hidden = true; current = null; document.body.style.paddingBottom = ''; return; }
+    bar.hidden = false; document.body.style.paddingBottom = '90px';
+    document.getElementById('np-title').textContent = labelFor(current);
+    btn.innerHTML = current.paused ? PLAY : PAUSE;
+    btn.setAttribute('aria-label', current.paused ? 'Play' : 'Pause');
+  }
+  document.addEventListener('play', function(e){
+    if (!(e.target instanceof HTMLAudioElement)) return;
+    document.querySelectorAll('audio').forEach(function(x){ if (x !== e.target && !x.paused) x.pause(); });
+    current = e.target; paint();
+  }, true);
+  ['pause','ended'].forEach(function(ev){ document.addEventListener(ev, function(e){ if (e.target === current) paint(); }, true); });
+  btn.addEventListener('click', function(){ if (!current) return; if (current.paused) current.play(); else current.pause(); });
+  document.getElementById('np-close').addEventListener('click', function(){ if (current) { current.pause(); current.currentTime = 0; } current = null; bar.hidden = true; document.body.style.paddingBottom = ''; });
+  document.getElementById('np-show').addEventListener('click', function(){
+    if (!current) return;
+    const sec = current.closest('.collapsed'); if (sec) sec.classList.remove('collapsed');
+    const w = current.closest('.work');
+    if (w && !w.classList.contains('open')) { const m = (w.id || '').match(/work-(\d+)/); if (m) toggleWork(+m[1]); }
+    (w || current).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (w) { w.classList.add('np-here'); setTimeout(function(){ w.classList.remove('np-here'); }, 1600); }
+  });
+  window.pauseAudioIn = function(el){ if (!el) return; el.querySelectorAll('audio').forEach(function(a){ if (!a.paused) a.pause(); }); };
+  // A re-render (refresh) replaces the players; hide the bar if its player is gone.
+  new MutationObserver(function(){ if (current && !document.body.contains(current)) paint(); }).observe(document.body, { childList: true, subtree: true });
+})();
+</script>
 </body>
 </html>
