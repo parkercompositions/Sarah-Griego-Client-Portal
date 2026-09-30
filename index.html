@@ -920,6 +920,13 @@
   .musician-share-row button{flex:0 0 96px;padding:9px 0;font-size:.66rem;text-align:center;}
   #musician-share-box p.musician-share-hint{font-size:12.5px !important;line-height:1.55 !important;margin:2px 0 0 !important;letter-spacing:0 !important;}
 
+  /* Share box open/close animation */
+  .musician-share-box.sb-anim{overflow:hidden;opacity:0;transform:translateY(-8px);margin-top:0;padding-top:0;padding-bottom:0;border-width:0;
+    transition:max-height .38s cubic-bezier(.22,.7,.2,1),opacity .3s ease,transform .38s cubic-bezier(.22,.7,.2,1),margin-top .38s ease,padding .38s ease,border-width .2s ease;}
+  .musician-share-box.sb-anim.sb-open{opacity:1;transform:none;margin-top:16px;padding-top:22px;padding-bottom:20px;border-width:1px;}
+  .musician-share-btn.on{border-color:var(--gr-red,#E3261F);background:var(--gr-red,#E3261F);opacity:1;}
+  @media (prefers-reduced-motion: reduce){ .musician-share-box.sb-anim{transition:none;} }
+
   /* Main frame: dark panel with the red top edge and offset, like the Green Room */
   main{
     max-width:880px;
@@ -1812,7 +1819,7 @@ function renderPortal(client) {
     document.getElementById('musician-share-all-row').style.display = 'flex';
   } else {
     shareBtn.style.display = 'none';
-    shareBox.style.display = 'none';
+    shareBox.style.display = 'none'; shareBox.classList.remove('sb-open', 'sb-anim');
   }
 
   // Full portal keeps the "thank you" sign-off — only the audio-only
@@ -1822,9 +1829,27 @@ function renderPortal(client) {
   document.title = `${client.name} — Parker Compositions Portal`;
 }
 
+// Slides open/closed like the chart panels: height, fade and a small drop.
 function toggleMusicianShareBox() {
   const box = document.getElementById('musician-share-box');
-  box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+  const btn = document.getElementById('musician-share-btn');
+  clearTimeout(box._t);
+  const opening = !box.classList.contains('sb-open');
+  if (opening) {
+    box.style.display = 'block';
+    box.classList.add('sb-anim');
+    box.style.maxHeight = '0px';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      box.classList.add('sb-open');
+      box.style.maxHeight = box.scrollHeight + 40 + 'px';
+    }));
+    box._t = setTimeout(() => { box.style.maxHeight = 'none'; }, 420);
+  } else {
+    box.style.maxHeight = box.scrollHeight + 'px';
+    requestAnimationFrame(() => requestAnimationFrame(() => { box.classList.remove('sb-open'); box.style.maxHeight = '0px'; }));
+    box._t = setTimeout(() => { box.style.display = 'none'; box.classList.remove('sb-anim'); }, 380);
+  }
+  if (btn) btn.classList.toggle('on', opening);
 }
 
 function copyMusicianField(id) {
