@@ -605,6 +605,12 @@
   .fin-col.pending h3{color:#ff6b68;border-bottom-color:#ff6b68;}
   .fin-col.paid h3{color:#4fd884;border-bottom-color:#4fd884;}
   .fin-list{list-style:none;}
+  .fin-h{cursor:pointer;display:flex;align-items:center;gap:10px;user-select:none;}
+  .fin-meta{margin-left:auto;font-size:12px;letter-spacing:.06em;text-transform:none;color:#9a948a;font-weight:400;}
+  .fin-chev{flex:0 0 26px;width:26px;height:26px;border-radius:50%;border:1px solid currentColor;display:grid;place-items:center;font-size:15px;line-height:1;}
+  .fin-col.closed .fin-list,.fin-col.closed .fin-search{display:none !important;}
+  .fin-search{width:100%;margin:10px 0 4px;background:#0e0e0e;color:#FBFAF8;border:1px solid #2E2E2E;padding:10px 12px;font:15px Poppins,sans-serif;}
+  .fin-list li.fin-hide{display:none;}
   .fin-list li{
     padding:14px 0;
     border-bottom:1px solid #2a2a2a;
@@ -1082,12 +1088,14 @@
       <h2 onclick="toggleSection('financials-section')"><span class="title-stack">Financials<img src="assets/swoosh-c.png" alt="" class="title-swoosh"><span id="financials-header-badge-wrap" class="pending-badge-wrap" style="display:none;"><span id="financials-header-badge" class="pending-badge"></span><span id="financials-header-badge-label" class="pending-badge-label"></span></span></span><span class="section-toggle">+</span></h2>
       <div class="section-body">
         <div class="fin-grid">
-          <div class="fin-col pending">
-            <h3>Pending<span id="pending-badge" class="pending-badge" style="display:none;"></span></h3>
+          <div class="fin-col pending" id="fin-col-pending">
+            <h3 class="fin-h" onclick="this.parentNode.dataset.user='1';toggleFinCol('pending')" role="button" tabindex="0" aria-expanded="true">Pending<span id="pending-badge" class="pending-badge" style="display:none;"></span><span class="fin-meta" id="fin-meta-pending"></span><span class="fin-chev">&minus;</span></h3>
+            <input class="fin-search" id="fin-search-pending" type="search" placeholder="Search pending" oninput="filterFin('pending')" style="display:none;">
             <ul class="fin-list" id="fin-pending"></ul>
           </div>
-          <div class="fin-col paid">
-            <h3>Paid</h3>
+          <div class="fin-col paid" id="fin-col-paid">
+            <h3 class="fin-h" onclick="this.parentNode.dataset.user='1';toggleFinCol('paid')" role="button" tabindex="0" aria-expanded="true">Paid<span class="fin-meta" id="fin-meta-paid"></span><span class="fin-chev">&minus;</span></h3>
+            <input class="fin-search" id="fin-search-paid" type="search" placeholder="Search paid" oninput="filterFin('paid')" style="display:none;">
             <ul class="fin-list" id="fin-paid"></ul>
           </div>
         </div>
@@ -1523,6 +1531,7 @@ const FEED_URL = 'https://fun-oclock-tour-admin-portal.netlify.app/.netlify/func
 function applyFeed(client, feed) {
   const c = Object.assign({}, client);
   if (feed.heroSub) c.heroSub = feed.heroSub;
+  if (feed.payUrl) c.payUrl = feed.payUrl;
   if (c.token && feed.name) c.name = feed.name;
   if (c.token && feed.groupName) c.groupName = feed.groupName;
   if (feed.updatedAt) c.updatedAt = feed.updatedAt;
@@ -1750,6 +1759,7 @@ function renderPortal(client) {
   `).join('');
 
   const fin = client.financials || { pending: [], paid: [] };
+  window.clientPayUrl = client.payUrl || '';
   renderFinCol('fin-pending', fin.pending, 'Nothing pending.');
   renderFinCol('fin-paid', fin.paid, 'Nothing paid yet.');
   document.getElementById('financials-section').style.display = '';
@@ -1991,9 +2001,36 @@ function toggleSection(id) {
   if (sec.classList.contains('collapsed')) pauseAudioIn(sec);
 }
 
+// Pending and Paid fold open/closed, show a count and total, and get a search box
+// once they hold more than a few items.
+function toggleFinCol(which, force) {
+  const col = document.getElementById('fin-col-' + which);
+  if (!col) return;
+  const closed = force === undefined ? !col.classList.contains('closed') : force;
+  col.classList.toggle('closed', closed);
+  col.querySelector('.fin-h').setAttribute('aria-expanded', String(!closed));
+  col.querySelector('.fin-chev').innerHTML = closed ? '+' : '&minus;';
+}
+function filterFin(which) {
+  const q = (document.getElementById('fin-search-' + which).value || '').trim().toLowerCase();
+  document.querySelectorAll('#fin-' + which + ' > li').forEach((li) => { li.classList.toggle('fin-hide', !!q && !li.textContent.toLowerCase().includes(q)); });
+}
+function finMeta(which, items) {
+  const n = (items || []).length;
+  const total = (items || []).reduce((t, x) => t + (parseFloat(String(x.amount || '').replace(/[^0-9.]/g, '')) || 0), 0);
+  const meta = document.getElementById('fin-meta-' + which);
+  const money = '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (meta) meta.textContent = !n ? '' : which === 'pending' ? money : `${n} · ${money}`;
+  const search = document.getElementById('fin-search-' + which);
+  if (search) { search.style.display = n > 3 ? '' : 'none'; if (n <= 3) search.value = ''; }
+  // Pending starts open; Paid starts folded once it's long.
+  const col = document.getElementById('fin-col-' + which);
+  if (col && !col.dataset.user) toggleFinCol(which, which === 'paid' ? n > 4 : false);
+}
 function renderFinCol(elId, items, emptyText) {
   const el = document.getElementById(elId);
   const isPending = elId === 'fin-pending';
+  finMeta(isPending ? 'pending' : 'paid', items);
 
   if (!items || items.length === 0) {
     el.innerHTML = `<li class="fin-empty">${emptyText}</li>`;
@@ -2009,7 +2046,8 @@ function renderFinCol(elId, items, emptyText) {
       // item.payUrl lets a specific item override with a real, working PayPal link
       // (the site-wide paypal.biz/[amount] auto-link is broken — PayPal retired
       // PayPal.Me for business accounts on 2026-07-30). Prefer it when present.
-      let payUrl = item.payUrl;
+      // A client-wide pay link (e.g. Bill.com for American Pops) wins over PayPal.
+      let payUrl = window.clientPayUrl || item.payUrl;
       if (!payUrl) {
         // Strip everything but digits and a decimal point so "$1,234.50" -> "1234.50"
         const numericAmount = item.amount.replace(/[^0-9.]/g, '');
