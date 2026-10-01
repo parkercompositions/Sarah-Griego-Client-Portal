@@ -280,7 +280,15 @@
     display:block;
     height:auto;
     width:clamp(110px,18vw,160px);
+    max-height:170px;
+    object-fit:contain;
     margin:0 auto 16px;
+  }
+  /* Uploaded logos come in any shape: wide ones get room to breathe, tall ones stay compact. */
+  header.hero .client-logo.fit{
+    width:auto;
+    max-width:min(78vw,340px);
+    max-height:150px;
   }
   header.hero h1{
     font-family:'Rock Salt',cursive;
@@ -1549,6 +1557,8 @@ function applyFeed(client, feed) {
   const c = Object.assign({}, client);
   if (feed.heroSub) c.heroSub = feed.heroSub;
   if (feed.payUrl) c.payUrl = feed.payUrl;
+  // A logo uploaded in the Green Room wins over a built-in one.
+  if (feed.logo) c.logo = feed.logo; else if (c.token) c.logo = '';
   if (c.token && feed.musicianCode) c.musicianCode = feed.musicianCode;
   if (c.token && feed.name) c.name = feed.name;
   if (c.token && feed.groupName) c.groupName = feed.groupName;
@@ -1626,7 +1636,7 @@ function tryUnlock() {
       .then((d) => {
         if (!d || !d.feed) throw new Error('no');
         const f = d.feed;
-        showPortal({ slug: musicianSlug, mcode: code, name: f.name || f.groupName || '', groupName: f.groupName || '', updatedAt: f.updatedAt || '', works: f.works || [], financials: { pending: [], paid: [] } }, true);
+        showPortal({ slug: musicianSlug, mcode: code, name: f.name || f.groupName || '', groupName: f.groupName || '', logo: f.logo || '', updatedAt: f.updatedAt || '', works: f.works || [], financials: { pending: [], paid: [] } }, true);
       })
       .catch(() => { gateError.textContent = "Incorrect access code. Please try again."; pwInput.value = ''; pwInput.focus(); });
     return;
@@ -1754,6 +1764,7 @@ function renderPortal(client) {
   const logoEl = document.getElementById('portal-logo');
   if (client.logo) {
     logoEl.src = client.logo;
+    logoEl.classList.toggle('fit', /^https:/.test(client.logo));
     logoEl.alt = heroName + ' logo';
     logoEl.style.display = 'block';
   } else {
@@ -1895,6 +1906,7 @@ function renderMusicianPortal(client) {
   const logoEl = document.getElementById('portal-logo');
   if (client.logo) {
     logoEl.src = client.logo;
+    logoEl.classList.toggle('fit', /^https:/.test(client.logo));
     logoEl.alt = (client.groupName || client.name) + ' logo';
     logoEl.style.display = 'block';
   } else {
