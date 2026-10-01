@@ -1728,8 +1728,20 @@ if (autoUnlockPending) {
 }
 
 function renderPortal(client) {
-  document.getElementById('portal-title').textContent = client.name;
-  document.getElementById('portal-sub').textContent = client.heroSub || '';
+  // The group or client name is the headline; the contact's own name only
+  // shows in the welcome greeting. When the line underneath starts with the
+  // same group name, drop it there so it isn't said twice.
+  const heroName = client.groupName || client.name;
+  document.getElementById('portal-title').innerHTML = String(heroName).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])).replace(/®/g, '<span class="trademark-sym">®</span>');
+  let heroSub = client.heroSub || '';
+  if (client.groupName) {
+    const plain = (x) => String(x).replace(/®/g, '').trim().toLowerCase();
+    const cut = heroSub.match(/^(.*?)\s+[—–-]\s+(.+)$/);
+    if (cut && plain(cut[1]).replace(/^the\s+/, '') === plain(client.groupName).replace(/^the\s+/, '')) {
+      heroSub = cut[2].charAt(0).toUpperCase() + cut[2].slice(1);
+    }
+  }
+  document.getElementById('portal-sub').textContent = heroSub;
 
   const updatedEl = document.getElementById('portal-updated');
   if (client.updatedAt) {
@@ -1742,7 +1754,7 @@ function renderPortal(client) {
   const logoEl = document.getElementById('portal-logo');
   if (client.logo) {
     logoEl.src = client.logo;
-    logoEl.alt = client.name + ' logo';
+    logoEl.alt = heroName + ' logo';
     logoEl.style.display = 'block';
   } else {
     logoEl.src = '';
@@ -1826,7 +1838,7 @@ function renderPortal(client) {
   // musician mini-portal hides it (see renderMusicianPortal).
   document.getElementById('thanks-block').style.display = '';
 
-  document.title = `${client.name} — Parker Compositions Portal`;
+  document.title = `${client.groupName || client.name} — Parker Compositions Portal`;
 }
 
 // Slides open/closed like the chart panels: height, fade and a small drop.
