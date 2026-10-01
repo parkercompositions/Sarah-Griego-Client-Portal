@@ -1554,7 +1554,7 @@ function applyFeed(client, feed) {
   if (c.token && feed.groupName) c.groupName = feed.groupName;
   if (feed.updatedAt) c.updatedAt = feed.updatedAt;
   if (feed.financials) { c.financials = feed.financials; if ((feed.financials.pending || []).length || (feed.financials.paid || []).length) c.showFinancials = true; }
-  if (Array.isArray(feed.works) && feed.works.length) c.works = feed.works;
+  if (Array.isArray(feed.works) && (feed.works.length || feed.worksManaged)) c.works = feed.works;
   c.commissions = feed.commissions || [];
   return c;
 }
