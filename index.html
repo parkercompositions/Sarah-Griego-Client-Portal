@@ -1642,6 +1642,17 @@ function setSide(side) {
   portalSide = side;
   document.querySelectorAll('[data-side]').forEach((el) => el.classList.toggle('side-off', el.getAttribute('data-side') !== side));
   document.querySelectorAll('[data-side-btn]').forEach((b) => { const on = b.getAttribute('data-side-btn') === side; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  renderFinancials();
+}
+// Invoices for the side being viewed. With only one kind of work there are no
+// sides to speak of, so everything shows.
+function renderFinancials() {
+  const fin = window.finData;
+  if (!fin) return;
+  const want = portalSide === 'projects' ? 'project' : 'commission';
+  const forSide = (list) => (window.finSplit ? (list || []).filter((x) => (x.tag === 'project' ? 'project' : 'commission') === want) : (list || []));
+  renderFinCol('fin-pending', forSide(fin.pending), window.finSplit ? 'Nothing pending on this side.' : 'Nothing pending.');
+  renderFinCol('fin-paid', forSide(fin.paid), window.finSplit ? 'Nothing paid yet on this side.' : 'Nothing paid yet.');
 }
 function renderSides(client) {
   const esc = (t) => String(t || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -1921,9 +1932,10 @@ function renderPortal(client) {
   const fin = client.financials || { pending: [], paid: [] };
   window.clientPayUrl = client.payUrl || '';
   const allFin = [...(fin.pending || []), ...(fin.paid || [])];
+  // Two kinds of work means two sides, and each side carries its own invoices.
   window.finSplit = new Set(allFin.map((x) => (x.tag === 'project' ? 'project' : 'commission'))).size > 1;
-  renderFinCol('fin-pending', fin.pending, 'Nothing pending.');
-  renderFinCol('fin-paid', fin.paid, 'Nothing paid yet.');
+  window.finData = fin;
+  renderFinancials();
   document.getElementById('financials-section').style.display = '';
   if ((!fin.pending || fin.pending.length === 0) && (!fin.paid || fin.paid.length === 0) && !client.showFinancials) {
     document.getElementById('financials-section').style.display = 'none';
@@ -2224,7 +2236,6 @@ function renderFinCol(elId, items, emptyText) {
   // Sarah tags each invoice as commission work or project work. When a client
   // has both, each column is split under its own heading; with only one kind,
   // nothing changes. Untagged lines read as commissions, which is what they were.
-  const kindOf = (x) => (x.tag === 'project' ? 'project' : 'commission');
   const renderItem = (item) => {
     let payBtn = '';
     if (isPending && item.amount && !item.noPayButton) {
@@ -2260,10 +2271,7 @@ function renderFinCol(elId, items, emptyText) {
     </li>
   `;
   };
-  if (!window.finSplit) { el.innerHTML = items.map(renderItem).join(''); return; }
-  el.innerHTML = [['commission', 'Commissions'], ['project', 'Projects']]
-    .map(([k, label]) => { const rows = items.filter((x) => kindOf(x) === k); return rows.length ? `<li class="fin-group">${label}</li>` + rows.map(renderItem).join('') : ''; })
-    .join('');
+  el.innerHTML = items.map(renderItem).join('');
 }
 
 function updatePendingBadge(count) {
