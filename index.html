@@ -989,10 +989,16 @@
   .fin-paid-tag{color:var(--gr-green);border:1px solid var(--gr-green);padding:3px 9px;border-radius:999px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;}
   .fin-link{color:#EDE8DE;text-underline-offset:3px;}
   .pending-badge{background:#FF6B64;}
+  /* Both circles sit inside .dark-card h2, which sets letter-spacing:.2em and a
+     tall line-height. A single glyph then centres against trailing letter-space
+     rather than against itself, so it reads left and slightly high. */
+  .pending-badge, .dark-card .section-toggle{letter-spacing:normal;line-height:1;text-indent:0;}
   .pending-badge-label{color:#FF6B64;}
 
   /* Current work */
   .cw-status{color:var(--gr-gold);border-color:var(--gr-gold);}
+  .fin-group{list-style:none;font-weight:500;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gr-gold);padding:14px 0 6px;border-bottom:none!important;}
+  .fin-list .fin-group:first-child{padding-top:4px;}
 
   /* Music and Projects sides (Oct 29): switched the way the Green Room switches rooms */
   .side-switch{display:flex;gap:0;margin:0 0 18px;border:1px solid var(--gr-line);width:max-content;max-width:100%;}
@@ -1010,6 +1016,9 @@
   .pj-h{font-weight:300;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:#999;margin-top:16px;}
   .pj-rb{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:7px 0;border-top:1px solid #222;font-size:.84rem;color:#EDE8DE;}
   .pj-rb b{font-weight:500;font-variant-numeric:tabular-nums;}
+  .pj-rb.two{grid-template-columns:minmax(0,1fr) auto;}
+  .pj-rb.two b{font-weight:400;color:#C9C3B8;}
+  .pj-line{font-size:.84rem;color:#EDE8DE;padding:7px 0;border-top:1px solid #222;}
   .pj-rb .st{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gr-gold);border:1px solid var(--gr-gold);padding:2px 7px;white-space:nowrap;}
   .pj-rb .st.paid{color:var(--gr-green);border-color:var(--gr-green);}
   @media (max-width:600px){ .pj-rb{grid-template-columns:minmax(0,1fr) auto;} .pj-rb .st{grid-column:1/-1;justify-self:start;} }
@@ -1657,7 +1666,11 @@ function renderSides(client) {
         <div class="cw-top"><div class="cw-title">${esc(p.role || p.name)}</div></div>
         <div class="cw-due">${esc([p.role ? p.name : '', p.city, range(p.start, p.end)].filter(Boolean).join(' · '))}</div>
         ${(p.resp || []).length ? `<div class="pj-h">Responsibilities</div><ul class="pj-resp">${p.resp.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
+        ${p.pay ? `<div class="pj-h">Pay</div><div class="pj-line">${esc(p.pay)}</div>` : ''}
+        ${(p.cover || []).length ? `<div class="pj-h">What's covered</div>${p.cover.map((c) => `<div class="pj-rb two"><span>${esc(c.item)}</span><b>${esc(c.how)}</b></div>`).join('')}` : ''}
+        ${(p.travel || []).length ? `<div class="pj-h">Travel and housing</div>${p.travel.map((t) => `<div class="pj-rb two"><span>${esc(t.label)}</span><b>${esc(t.value)}</b></div>`).join('')}` : ''}
         ${(p.reimb || []).length ? `<div class="pj-h">Reimbursements</div>${p.reimb.map((r) => `<div class="pj-rb"><span>${esc(r.what)}${r.date ? ` <span style="color:#999">· ${esc(fd(r.date))}</span>` : ''}</span><b>${esc(r.amount)}</b><span class="st${r.status === 'Paid back' ? ' paid' : ''}">${esc(r.status)}</span></div>`).join('')}` : ''}
+        ${p.notes ? `<div class="pj-h">Notes</div><div class="pj-line" style="white-space:pre-line">${esc(p.notes)}</div>` : ''}
         <div class="pj-h">Invoices</div><div class="cw-due" style="margin-top:6px">Your invoices for this job are under Financials. Reimbursements come as their own packet.</div>
       </div>`).join('');
   }
@@ -1907,6 +1920,8 @@ function renderPortal(client) {
 
   const fin = client.financials || { pending: [], paid: [] };
   window.clientPayUrl = client.payUrl || '';
+  const allFin = [...(fin.pending || []), ...(fin.paid || [])];
+  window.finSplit = new Set(allFin.map((x) => (x.tag === 'project' ? 'project' : 'commission'))).size > 1;
   renderFinCol('fin-pending', fin.pending, 'Nothing pending.');
   renderFinCol('fin-paid', fin.paid, 'Nothing paid yet.');
   document.getElementById('financials-section').style.display = '';
@@ -2206,7 +2221,11 @@ function renderFinCol(elId, items, emptyText) {
 
   if (isPending) updatePendingBadge(items.length);
 
-  el.innerHTML = items.map(item => {
+  // Sarah tags each invoice as commission work or project work. When a client
+  // has both, each column is split under its own heading; with only one kind,
+  // nothing changes. Untagged lines read as commissions, which is what they were.
+  const kindOf = (x) => (x.tag === 'project' ? 'project' : 'commission');
+  const renderItem = (item) => {
     let payBtn = '';
     if (isPending && item.amount && !item.noPayButton) {
       // item.payUrl lets a specific item override with a real, working PayPal link
@@ -2240,7 +2259,11 @@ function renderFinCol(elId, items, emptyText) {
       </div>
     </li>
   `;
-  }).join('');
+  };
+  if (!window.finSplit) { el.innerHTML = items.map(renderItem).join(''); return; }
+  el.innerHTML = [['commission', 'Commissions'], ['project', 'Projects']]
+    .map(([k, label]) => { const rows = items.filter((x) => kindOf(x) === k); return rows.length ? `<li class="fin-group">${label}</li>` + rows.map(renderItem).join('') : ''; })
+    .join('');
 }
 
 function updatePendingBadge(count) {
