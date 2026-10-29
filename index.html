@@ -1713,8 +1713,10 @@ function openJobSheet(i) {
     (p.reimb || []).length ? sec('Reimbursements', `<table><tr><th>What it was for</th><th>Date</th><th class="num">Amount</th><th>Status</th></tr>${p.reimb.map((r) => `<tr><td>${esc(r.what)}</td><td>${esc(fd(r.date))}</td><td class="num">${esc(r.amount)}</td><td>${esc(r.status)}</td></tr>`).join('')}</table>`) : '',
     p.notes ? sec('Notes', `<p style="white-space:pre-wrap;margin:0">${esc(p.notes)}</p>`) : '',
   ].join('');
+  const logo = new URL('assets/favicon.png', document.baseURI).href;
   const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(p.name || 'Job sheet')} — Job sheet</title>
+<link rel="icon" href="${esc(logo)}" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Rock+Salt&display=swap" rel="stylesheet">
 <style>
 :root{--acc:#5E8C5D;--ink:#111;--mute:#6B6760;--line:#E4E0D8}
@@ -1722,6 +1724,7 @@ function openJobSheet(i) {
 body{font-family:Poppins,Helvetica,Arial,sans-serif;color:var(--ink);margin:0;padding:32px 16px 56px;font-size:13.5px;line-height:1.5}
 .page{max-width:780px;margin:0 auto;background:#fff;box-shadow:0 10px 40px -18px rgba(0,0,0,.35);border-top:6px solid var(--acc)}
 header{display:flex;align-items:center;gap:18px;padding:28px 40px 22px;border-bottom:1px solid var(--line)}
+header img{width:58px;height:58px;border-radius:12px;flex:none}
 .brand small{display:block;font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--acc);font-weight:600}
 .brand span{display:block;font-size:14px;font-weight:500;margin-top:2px}
 .kind{margin-left:auto;text-align:right;font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--mute)}
@@ -1741,7 +1744,7 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;paddin
 </style></head><body>
 <div class="bar"><button onclick="window.print()">Print / Save PDF</button></div>
 <div class="page">
-<header><div class="brand"><small>Sarah Griego Music</small><span>Job sheet</span></div><div class="kind">Job sheet<b>${esc(p.stage || '')}</b></div></header>
+<header><img src="${esc(logo)}" alt=""><div class="brand"><small>Sarah Griego Music</small><span>Job sheet</span></div><div class="kind">Job sheet<b>${esc(p.stage || '')}</b></div></header>
 <div class="hero"><h1>${esc(p.name || 'Job sheet')}</h1><div class="sub">${esc([p.role, when, p.city].filter(Boolean).join(' · '))}</div></div>
 <main>${body}</main>
 <footer><span><b>Sarah Griego</b> · Parker Compositions · parkercompositions@gmail.com</span><span>${esc(new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }))}</span></footer>
