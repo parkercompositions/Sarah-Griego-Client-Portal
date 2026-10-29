@@ -585,17 +585,30 @@
   .dark-card:not(.collapsed) .section-toggle{transform:translateY(-50%) rotate(45deg);}
   .dark-card .section-body{
     border-top:4px solid var(--red);
-    padding:28px 0 36px;
-    max-height:6000px;
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:1fr;
+    opacity:1;
+    transition:grid-template-rows .55s cubic-bezier(.22,.7,.2,1), opacity .45s ease, border-color .35s ease;
+  }
+  .dark-card .section-body>.sb-in{
+    min-height:0;
+    min-width:0;
     overflow:hidden;
-    transition:max-height .35s ease, padding .35s ease;
+    padding:28px 0 36px;
+    transition:padding .55s cubic-bezier(.22,.7,.2,1);
   }
   .dark-card.collapsed .section-body{
-    max-height:0;
+    grid-template-rows:0fr;
+    opacity:0;
+    border-top-color:transparent;
+  }
+  .dark-card.collapsed .section-body>.sb-in{
     padding-top:0;
     padding-bottom:0;
-    border-top:none;
-    overflow:hidden;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .dark-card .section-body, .dark-card .section-body>.sb-in{transition:none;}
   }
 
   /* Financials */
@@ -958,7 +971,8 @@
   .dark-card .title-swoosh{display:none;}
   .dark-card .section-toggle{width:30px;height:30px;background:transparent;border:1px solid #3A3A3A;color:var(--gr-text);font-weight:400;}
   .dark-card:not(.collapsed) .section-toggle{border-color:var(--gr-red);color:#fff;background:var(--gr-red);}
-  .dark-card .section-body{border-top:1px solid var(--gr-line);padding:22px 0 26px;}
+  .dark-card .section-body{border-top:1px solid var(--gr-line);}
+  .dark-card .section-body>.sb-in{padding:22px 0 26px;}
   .dark-card:not(.collapsed){border-left:3px solid var(--gr-red);}
   .pending-badge-wrap{margin-top:8px;}
 
@@ -1020,6 +1034,22 @@
   .pj-rb.two b{font-weight:400;color:#C9C3B8;}
   .pj-line{font-size:.84rem;color:#EDE8DE;padding:7px 0;border-top:1px solid #222;}
   .pj-sheet{margin-top:14px;background:transparent;cursor:pointer;font-family:'Poppins',sans-serif;}
+  /* Folding, matched to The Green Room: grid rows over .55s with its easing,
+     and a chevron that rotates and picks up the accent when open. */
+  .pj-fold{padding:0;border-bottom:1px solid #2a2a2a;}
+  .pj-fold:last-child{border-bottom:none;}
+  .pj-head{display:flex;align-items:center;gap:14px;width:100%;padding:16px 0;background:transparent;border:0;cursor:pointer;text-align:left;font-family:'Poppins',sans-serif;}
+  .pj-head-t{flex:1;min-width:0;display:block;}
+  .pj-head-t>.cw-title,.pj-head-t>.cw-due{display:block;}
+  .pj-head .cw-due{margin-top:3px;}
+  .pj-stage{flex:none;font-weight:500;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gr-gold);border:1px solid var(--gr-gold);padding:3px 9px;white-space:nowrap;}
+  .pj-chev{flex:none;width:8px;height:8px;border-right:2px solid var(--gr-text);border-bottom:2px solid var(--gr-text);transform:translateY(-2px) rotate(45deg);transition:transform .45s cubic-bezier(.22,.7,.2,1),border-color .25s;}
+  .pj-fold:not(.shut) .pj-chev{transform:translateY(1px) rotate(-135deg);border-color:var(--gr-red);}
+  .pj-body{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:1fr;opacity:1;transition:grid-template-rows .55s cubic-bezier(.22,.7,.2,1),opacity .45s ease;}
+  .pj-body>.pj-in{min-height:0;min-width:0;overflow:hidden;padding-bottom:18px;transition:padding .55s cubic-bezier(.22,.7,.2,1);}
+  .pj-fold.shut>.pj-body{grid-template-rows:0fr;opacity:0;}
+  .pj-fold.shut>.pj-body>.pj-in{padding-bottom:0;}
+  @media (prefers-reduced-motion:reduce){.pj-body,.pj-body>.pj-in,.pj-chev{transition:none;}}
   .pj-rb .st{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gr-gold);border:1px solid var(--gr-gold);padding:2px 7px;white-space:nowrap;}
   .pj-rb .st.paid{color:var(--gr-green);border-color:var(--gr-green);}
   @media (max-width:600px){ .pj-rb{grid-template-columns:minmax(0,1fr) auto;} .pj-rb .st{grid-column:1/-1;justify-self:start;} }
@@ -1675,9 +1705,14 @@ function renderSides(client) {
     pSec.style.display = projects.length ? '' : 'none';
     window.portalProjects = projects;
     document.getElementById('projects-list').innerHTML = projects.map((p, i) => `
-      <div class="pj">
-        <div class="cw-top"><div class="cw-title">${esc(p.role || p.name)}</div></div>
-        <div class="cw-due">${esc([p.role ? p.name : '', p.city, range(p.start, p.end)].filter(Boolean).join(' · '))}</div>
+      <div class="pj pj-fold shut">
+        <button type="button" class="pj-head" onclick="toggleProject(this)" aria-expanded="false">
+          <span class="pj-head-t"><span class="cw-title">${esc(p.role || p.name)}</span>
+          <span class="cw-due">${esc([p.role ? p.name : '', p.city, range(p.start, p.end)].filter(Boolean).join(' · '))}</span></span>
+          ${p.stage ? `<span class="pj-stage">${esc(p.stage)}</span>` : ''}
+          <span class="pj-chev" aria-hidden="true"></span>
+        </button>
+        <div class="pj-body"><div class="pj-in">
         ${(p.resp || []).length ? `<div class="pj-h">Responsibilities</div><ul class="pj-resp">${p.resp.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
         ${p.pay ? `<div class="pj-h">Pay</div><div class="pj-line">${esc(p.pay)}</div>` : ''}
         ${(p.cover || []).length ? `<div class="pj-h">What's covered</div>${p.cover.map((c) => `<div class="pj-rb two"><span>${esc(c.item)}</span><b>${esc(c.how)}</b></div>`).join('')}` : ''}
@@ -1686,6 +1721,7 @@ function renderSides(client) {
         ${p.notes ? `<div class="pj-h">Notes</div><div class="pj-line" style="white-space:pre-line">${esc(p.notes)}</div>` : ''}
         <div class="pj-h">Invoices</div><div class="cw-due" style="margin-top:6px">Your invoices for this job are under Financials. Reimbursements come as their own packet.</div>
         <button type="button" class="cw-link pj-sheet" onclick="openJobSheet(${i})">Open the job sheet ↗</button>
+        </div></div>
       </div>`).join('');
   }
   const hasMusic = (client.works || []).length || (client.commissions || []).length || visits.length;
@@ -1696,6 +1732,12 @@ function renderSides(client) {
 }
 // The job sheet as its own page: Sarah Griego letterhead, the same sections
 // she sees, built from this portal's own data so it can never be stale.
+function toggleProject(btn) {
+  const row = btn.closest('.pj-fold');
+  const open = row.classList.toggle('shut') === false;
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (!open) pauseAudioIn(row);
+}
 function openJobSheet(i) {
   const p = (window.portalProjects || [])[i];
   if (!p) return;
@@ -2250,6 +2292,17 @@ if (searchInputEl) {
   });
 }
 
+function wrapSectionBodies() {
+  document.querySelectorAll('.dark-card .section-body').forEach((body) => {
+    if (body.firstElementChild && body.firstElementChild.classList.contains('sb-in')) return;
+    const inner = document.createElement('div');
+    inner.className = 'sb-in';
+    while (body.firstChild) inner.appendChild(body.firstChild);
+    body.appendChild(inner);
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wrapSectionBodies);
+else wrapSectionBodies();
 function toggleSection(id) {
   const sec = document.getElementById(id);
   sec.classList.toggle('collapsed');
