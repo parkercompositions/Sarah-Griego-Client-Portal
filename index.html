@@ -1019,6 +1019,7 @@
   .pj-rb.two{grid-template-columns:minmax(0,1fr) auto;}
   .pj-rb.two b{font-weight:400;color:#C9C3B8;}
   .pj-line{font-size:.84rem;color:#EDE8DE;padding:7px 0;border-top:1px solid #222;}
+  .pj-sheet{margin-top:14px;background:transparent;cursor:pointer;font-family:'Poppins',sans-serif;}
   .pj-rb .st{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gr-gold);border:1px solid var(--gr-gold);padding:2px 7px;white-space:nowrap;}
   .pj-rb .st.paid{color:var(--gr-green);border-color:var(--gr-green);}
   @media (max-width:600px){ .pj-rb{grid-template-columns:minmax(0,1fr) auto;} .pj-rb .st{grid-column:1/-1;justify-self:start;} }
@@ -1672,7 +1673,8 @@ function renderSides(client) {
   }
   if (pSec) {
     pSec.style.display = projects.length ? '' : 'none';
-    document.getElementById('projects-list').innerHTML = projects.map((p) => `
+    window.portalProjects = projects;
+    document.getElementById('projects-list').innerHTML = projects.map((p, i) => `
       <div class="pj">
         <div class="cw-top"><div class="cw-title">${esc(p.role || p.name)}</div></div>
         <div class="cw-due">${esc([p.role ? p.name : '', p.city, range(p.start, p.end)].filter(Boolean).join(' · '))}</div>
@@ -1683,6 +1685,7 @@ function renderSides(client) {
         ${(p.reimb || []).length ? `<div class="pj-h">Reimbursements</div>${p.reimb.map((r) => `<div class="pj-rb"><span>${esc(r.what)}${r.date ? ` <span style="color:#999">· ${esc(fd(r.date))}</span>` : ''}</span><b>${esc(r.amount)}</b><span class="st${r.status === 'Paid back' ? ' paid' : ''}">${esc(r.status)}</span></div>`).join('')}` : ''}
         ${p.notes ? `<div class="pj-h">Notes</div><div class="pj-line" style="white-space:pre-line">${esc(p.notes)}</div>` : ''}
         <div class="pj-h">Invoices</div><div class="cw-due" style="margin-top:6px">Your invoices for this job are under Financials. Reimbursements come as their own packet.</div>
+        <button type="button" class="cw-link pj-sheet" onclick="openJobSheet(${i})">Open the job sheet ↗</button>
       </div>`).join('');
   }
   const hasMusic = (client.works || []).length || (client.commissions || []).length || visits.length;
@@ -1690,6 +1693,62 @@ function renderSides(client) {
   const sw = document.getElementById('side-switch');
   if (sw) sw.hidden = !two;
   setSide(two ? portalSide : projects.length && !hasMusic ? 'projects' : 'music');
+}
+// The job sheet as its own page: Sarah Griego letterhead, the same sections
+// she sees, built from this portal's own data so it can never be stale.
+function openJobSheet(i) {
+  const p = (window.portalProjects || [])[i];
+  if (!p) return;
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fd = (d) => { if (!d) return ''; const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); };
+  const when = p.start && p.end && p.start !== p.end ? `${fd(p.start)} to ${fd(p.end)}` : fd(p.start || p.end);
+  const row = (k, v) => (v ? `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>` : '');
+  const sec = (title, inner) => (inner && inner.replace(/\s/g, '') ? `<section><h2>${esc(title)}</h2>${inner}</section>` : '');
+  const body = [
+    sec('The job', `<table>${row('Who you hired', 'Sarah Griego')}${row('Her role', p.role)}${row('When', when)}${row('Where', p.city)}</table>`),
+    (p.resp || []).length ? sec('Responsibilities', `<table>${p.resp.map((r) => `<tr><td>${esc(r)}</td></tr>`).join('')}</table>`) : '',
+    p.pay ? sec('Pay', `<table><tr><td>${esc(p.pay)}</td></tr></table>`) : '',
+    (p.cover || []).length ? sec("What's covered", `<table><tr><th>Item</th><th>Arrangement</th></tr>${p.cover.map((c) => `<tr><td>${esc(c.item)}</td><td>${esc(c.how)}</td></tr>`).join('')}</table>`) : '',
+    (p.travel || []).length ? sec('Travel and housing', `<table>${p.travel.map((t) => row(t.label, t.value)).join('')}</table>`) : '',
+    (p.reimb || []).length ? sec('Reimbursements', `<table><tr><th>What it was for</th><th>Date</th><th class="num">Amount</th><th>Status</th></tr>${p.reimb.map((r) => `<tr><td>${esc(r.what)}</td><td>${esc(fd(r.date))}</td><td class="num">${esc(r.amount)}</td><td>${esc(r.status)}</td></tr>`).join('')}</table>`) : '',
+    p.notes ? sec('Notes', `<p style="white-space:pre-wrap;margin:0">${esc(p.notes)}</p>`) : '',
+  ].join('');
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(p.name || 'Job sheet')} — Job sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Rock+Salt&display=swap" rel="stylesheet">
+<style>
+:root{--acc:#5E8C5D;--ink:#111;--mute:#6B6760;--line:#E4E0D8}
+*{box-sizing:border-box}html{background:#EDEBE6}
+body{font-family:Poppins,Helvetica,Arial,sans-serif;color:var(--ink);margin:0;padding:32px 16px 56px;font-size:13.5px;line-height:1.5}
+.page{max-width:780px;margin:0 auto;background:#fff;box-shadow:0 10px 40px -18px rgba(0,0,0,.35);border-top:6px solid var(--acc)}
+header{display:flex;align-items:center;gap:18px;padding:28px 40px 22px;border-bottom:1px solid var(--line)}
+.brand small{display:block;font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--acc);font-weight:600}
+.brand span{display:block;font-size:14px;font-weight:500;margin-top:2px}
+.kind{margin-left:auto;text-align:right;font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--mute)}
+.kind b{display:block;color:var(--ink);font-size:12px;letter-spacing:.2em;margin-top:2px;font-weight:600}
+.hero{padding:28px 40px 8px}.hero h1{font-family:'Rock Salt',cursive;font-weight:400;font-size:26px;line-height:1.35;margin:0 0 6px}.hero .sub{color:var(--mute)}
+main{padding:4px 40px 12px}section{margin-top:26px;break-inside:avoid}
+h2{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--acc);font-weight:600;margin:0 0 10px}
+h2::after{content:"";flex:1;height:1px;background:var(--line)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:600;padding:6px 0;border-bottom:1px solid var(--line)}
+td{padding:7px 0;border-bottom:1px solid #F1EEE8;vertical-align:top}th,td{padding-right:18px}th:last-child,td:last-child{padding-right:0}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 40px 24px;margin-top:28px;border-top:1px solid var(--line);font-size:11px;color:var(--mute)}footer b{color:var(--ink);font-weight:500}
+.bar{position:fixed;top:14px;right:14px}.bar button{font:600 11px Poppins,sans-serif;letter-spacing:.16em;text-transform:uppercase;padding:0 16px;height:40px;border:2px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer}
+@media(max-width:600px){header,.hero,main,footer{padding-left:20px;padding-right:20px}.kind{display:none}.bar{top:auto;bottom:14px}}
+@media print{html{background:#fff}body{padding:0}.page{box-shadow:none;max-width:none}.bar{display:none}@page{margin:12mm}}
+</style></head><body>
+<div class="bar"><button onclick="window.print()">Print / Save PDF</button></div>
+<div class="page">
+<header><div class="brand"><small>Sarah Griego Music</small><span>Job sheet</span></div><div class="kind">Job sheet<b>${esc(p.stage || '')}</b></div></header>
+<div class="hero"><h1>${esc(p.name || 'Job sheet')}</h1><div class="sub">${esc([p.role, when, p.city].filter(Boolean).join(' · '))}</div></div>
+<main>${body}</main>
+<footer><span><b>Sarah Griego</b> · Parker Compositions · parkercompositions@gmail.com</span><span>${esc(new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }))}</span></footer>
+</div></body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) { alert('Allow pop-ups for this site to open the job sheet.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
 }
 function loadFeed(client, isMusician, done) {
   if (!client || !client.slug || typeof fetch !== 'function') { if (done) done(); return; }
