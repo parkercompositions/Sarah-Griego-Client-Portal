@@ -993,6 +993,26 @@
 
   /* Current work */
   .cw-status{color:var(--gr-gold);border-color:var(--gr-gold);}
+
+  /* Music and Projects sides (Oct 29): switched the way the Green Room switches rooms */
+  .side-switch{display:flex;gap:0;margin:0 0 18px;border:1px solid var(--gr-line);width:max-content;max-width:100%;}
+  .side-switch button{background:transparent;border:none;color:var(--gr-text);font-family:'Poppins',sans-serif;font-weight:500;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;padding:11px 22px;cursor:pointer;transition:background .25s ease,color .25s ease;}
+  .side-switch button.on{background:var(--gr-red);color:#fff;}
+  .side-switch button:focus-visible{outline:2px solid var(--gr-gold);outline-offset:2px;}
+  .side-off{display:none!important;}
+  .vs-sessions,.pj-resp{list-style:none;margin:10px 0 0;padding:0;}
+  .vs-sessions li,.pj-resp li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #222;font-size:.84rem;color:#EDE8DE;}
+  .vs-sessions li span:last-child{color:#999;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .pj-resp li{justify-content:flex-start;}
+  .pj-resp li::before{content:"";width:5px;height:5px;margin-top:.55em;background:var(--gr-red);flex:none;}
+  .pj{padding:4px 0 18px;border-bottom:1px solid #2a2a2a;margin-bottom:16px;}
+  .pj:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+  .pj-h{font-weight:300;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:#999;margin-top:16px;}
+  .pj-rb{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:7px 0;border-top:1px solid #222;font-size:.84rem;color:#EDE8DE;}
+  .pj-rb b{font-weight:500;font-variant-numeric:tabular-nums;}
+  .pj-rb .st{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gr-gold);border:1px solid var(--gr-gold);padding:2px 7px;white-space:nowrap;}
+  .pj-rb .st.paid{color:var(--gr-green);border-color:var(--gr-green);}
+  @media (max-width:600px){ .pj-rb{grid-template-columns:minmax(0,1fr) auto;} .pj-rb .st{grid-column:1/-1;justify-self:start;} }
   .cw-note{white-space:pre-line;}
   .cw-link{display:inline-block;margin-top:10px;padding:9px 14px;border:1px solid #3A3A3A;color:var(--gr-text);text-decoration:none;font-weight:500;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;}
   .cw-link:hover{background:var(--gr-red);border-color:var(--gr-red);color:#fff;}
@@ -1093,14 +1113,29 @@
   </header>
 
   <main>
-    <section id="current-work-section" class="dark-card collapsed" style="display:none;">
+    <div class="side-switch" id="side-switch" role="tablist" aria-label="Which side" hidden>
+      <button type="button" role="tab" data-side-btn="music" aria-selected="true" class="on" onclick="setSide('music')">Music</button>
+      <button type="button" role="tab" data-side-btn="projects" aria-selected="false" onclick="setSide('projects')">Projects</button>
+    </div>
+
+    <section id="current-work-section" data-side="music" class="dark-card collapsed" style="display:none;">
       <h2 onclick="toggleSection('current-work-section')"><span class="title-stack">Work in progress<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
       <div class="section-body">
         <ul class="cw-list" id="current-work-list"></ul>
       </div>
     </section>
 
-    <section id="works-section" class="dark-card collapsed">
+    <section id="visits-section" data-side="music" class="dark-card collapsed" style="display:none;">
+      <h2 onclick="toggleSection('visits-section')"><span class="title-stack">Sarah's visit<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
+      <div class="section-body"><ul class="cw-list" id="visits-list"></ul></div>
+    </section>
+
+    <section id="projects-section" data-side="projects" class="dark-card collapsed" style="display:none;">
+      <h2 onclick="toggleSection('projects-section')"><span class="title-stack">Projects<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
+      <div class="section-body"><div id="projects-list"></div></div>
+    </section>
+
+    <section id="works-section" data-side="music" class="dark-card collapsed">
       <h2 onclick="toggleSection('works-section')"><span class="title-stack">Completed works<img src="assets/swoosh-c.png" alt="" class="title-swoosh"></span><span class="section-toggle">+</span></h2>
       <div class="section-body">
         <div class="chart-search-wrap">
@@ -1570,6 +1605,8 @@ function applyFeed(client, feed) {
   if (feed.financials) { c.financials = feed.financials; if ((feed.financials.pending || []).length || (feed.financials.paid || []).length) c.showFinancials = true; }
   if (Array.isArray(feed.works) && (feed.works.length || feed.worksManaged)) c.works = feed.works;
   c.commissions = feed.commissions || [];
+  c.visits = feed.visits || [];
+  c.projects = feed.projects || [];
   return c;
 }
 function renderCurrentWork(client) {
@@ -1588,6 +1625,48 @@ function renderCurrentWork(client) {
       ${w.link && /^https:\/\//.test(w.link) ? `<a class="cw-link" href="${esc(w.link)}" target="_blank" rel="noopener">${esc(w.linkLabel || 'Open link')} ↗</a>` : ''}
     </li>`).join('');
 }
+// A client Sarah has done both kinds of work for gets two sides: Music (commissions,
+// charts, clinic visits) and Projects (non-compositional jobs). Money and contact
+// show on both.
+let portalSide = 'music';
+function setSide(side) {
+  portalSide = side;
+  document.querySelectorAll('[data-side]').forEach((el) => el.classList.toggle('side-off', el.getAttribute('data-side') !== side));
+  document.querySelectorAll('[data-side-btn]').forEach((b) => { const on = b.getAttribute('data-side-btn') === side; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+}
+function renderSides(client) {
+  const esc = (t) => String(t || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const fd = (d) => { if (!d) return ''; const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); };
+  const range = (a, b) => (a && b && a !== b ? `${fd(a)} to ${fd(b)}` : fd(a || b));
+  const visits = client.visits || [], projects = client.projects || [];
+  const vSec = document.getElementById('visits-section'), pSec = document.getElementById('projects-section');
+  if (vSec) {
+    vSec.style.display = visits.length ? '' : 'none';
+    document.getElementById('visits-list').innerHTML = visits.map((v) => `
+      <li>
+        <div class="cw-top"><div class="cw-title">${esc(v.name)}</div></div>
+        <div class="cw-due">${esc([v.city, range(v.start, v.end)].filter(Boolean).join(' · '))}</div>
+        ${(v.sessions || []).length ? `<ul class="vs-sessions">${v.sessions.map((x) => `<li><span>${esc([x.what, x.group].filter(Boolean).join(' · '))}</span><span>${esc([fd(x.date), x.time].filter(Boolean).join(' · '))}</span></li>`).join('')}</ul>` : ''}
+        ${v.url && /^https:\/\//.test(v.url) ? `<a class="cw-link" href="${esc(v.url)}" target="_blank" rel="noopener">Open the visit page ↗</a>` : ''}
+      </li>`).join('');
+  }
+  if (pSec) {
+    pSec.style.display = projects.length ? '' : 'none';
+    document.getElementById('projects-list').innerHTML = projects.map((p) => `
+      <div class="pj">
+        <div class="cw-top"><div class="cw-title">${esc(p.role || p.name)}</div></div>
+        <div class="cw-due">${esc([p.role ? p.name : '', p.city, range(p.start, p.end)].filter(Boolean).join(' · '))}</div>
+        ${(p.resp || []).length ? `<div class="pj-h">Responsibilities</div><ul class="pj-resp">${p.resp.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
+        ${(p.reimb || []).length ? `<div class="pj-h">Reimbursements</div>${p.reimb.map((r) => `<div class="pj-rb"><span>${esc(r.what)}${r.date ? ` <span style="color:#999">· ${esc(fd(r.date))}</span>` : ''}</span><b>${esc(r.amount)}</b><span class="st${r.status === 'Paid back' ? ' paid' : ''}">${esc(r.status)}</span></div>`).join('')}` : ''}
+        <div class="pj-h">Invoices</div><div class="cw-due" style="margin-top:6px">Your invoices for this job are under Financials. Reimbursements come as their own packet.</div>
+      </div>`).join('');
+  }
+  const hasMusic = (client.works || []).length || (client.commissions || []).length || visits.length;
+  const two = hasMusic && projects.length;
+  const sw = document.getElementById('side-switch');
+  if (sw) sw.hidden = !two;
+  setSide(two ? portalSide : projects.length && !hasMusic ? 'projects' : 'music');
+}
 function loadFeed(client, isMusician, done) {
   if (!client || !client.slug || typeof fetch !== 'function') { if (done) done(); return; }
   fetch(FEED_URL + '?slug=' + encodeURIComponent(client.slug) + (client.token ? '&t=' + encodeURIComponent(client.token) : '') + (client.mcode ? '&m=' + encodeURIComponent(client.mcode) : ''), { cache: 'no-store' })
@@ -1595,7 +1674,7 @@ function loadFeed(client, isMusician, done) {
     .then((d) => {
       if (!d || !d.feed) return;
       const merged = applyFeed(client, d.feed);
-      if (isMusician) { renderMusicianPortal(merged); } else { renderPortal(merged); renderCurrentWork(merged); }
+      if (isMusician) { renderMusicianPortal(merged); } else { renderPortal(merged); renderCurrentWork(merged); renderSides(merged); }
     })
     .catch(() => {})
     .then(() => { if (done) done(); });
