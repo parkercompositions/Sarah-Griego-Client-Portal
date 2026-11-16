@@ -1691,20 +1691,29 @@ function lockInfo(client, musician) {
   if (!l || (!l.notice && !anyLocked)) return null;
   if (musician) return anyLocked ? { title: 'Music locked', body: 'These parts and recordings are temporarily unavailable. Please check with your director.' } : null;
   const pending = ((client.financials || {}).pending) || [];
-  const inv = l.notice ? String(l.invoice || '').replace(/^#/, '') : '';
-  const item = inv ? pending.find((x) => String(x.number || '') === inv || new RegExp('#\\s?' + inv.replace(/[^\w-]/g, '') + '\\b').test(x.sub || '')) : null;
-  const amount = l.amount || (item && item.amount) || '';
-  let payUrl = '';
-  if (inv) {
-    payUrl = window.clientPayUrl || (item && item.payUrl) || l.payUrl || '';
-    if (!payUrl && amount) payUrl = 'https://www.paypal.biz/ParkerCompositions/' + amount.replace(/[^0-9.]/g, '');
-  }
-  const what = inv ? `Invoice #${inv}${amount ? ` (${amount})` : ''}` : '';
+  const raw = l.notice ? ((l.invoices && l.invoices.length) ? l.invoices : (l.invoice ? [{ invoice: l.invoice, amount: l.amount, payUrl: l.payUrl }] : [])) : [];
+  const paypal = (amt) => (amt ? 'https://www.paypal.biz/ParkerCompositions/' + String(amt).replace(/[^0-9.]/g, '') : '');
+  const invs = raw.map((x) => {
+    const n = String(x.invoice || '').replace(/^#/, '');
+    const item = pending.find((p) => String(p.number || '') === n || new RegExp('#\\s?' + n.replace(/[^\w-]/g, '') + '\\b').test(p.sub || ''));
+    const amount = x.amount || (item && item.amount) || '';
+    return { n, amount, payUrl: (item && item.payUrl) || x.payUrl || paypal(amount) };
+  }).filter((x) => x.n);
+  const many = invs.length > 1;
+  const names = invs.map((x) => `#${x.n}${x.amount ? ` (${x.amount})` : ''}`);
+  const listed = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names.join('');
+  const nums = invs.map((x) => parseFloat(String(x.amount).replace(/[^0-9.]/g, '')));
+  const total = many && nums.every((v) => !isNaN(v)) ? '$' + nums.reduce((a, b) => a + b, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+  const what = invs.length ? `${many ? 'Invoices' : 'Invoice'} ${listed}${total ? `, totaling ${total},` : ''}` : '';
+  // A client-wide pay link (e.g. Bill.com) means one button; otherwise one per invoice.
+  const pays = !invs.length ? [] : window.clientPayUrl ? [{ label: many ? 'Pay now' : `Pay Invoice #${invs[0].n}`, url: window.clientPayUrl }] : invs.filter((x) => x.payUrl).map((x) => ({ label: `Pay Invoice #${x.n}`, url: x.payUrl }));
   const thanks = ' If payment is already on its way, thank you, and please let Sarah know.';
-  if (inv && anyLocked) return { title: music ? 'Music locked' : 'Access locked', body: `Access to your ${things} is paused until ${what} is settled. Please submit payment as soon as possible to restore access.${thanks}`, payUrl, inv };
-  if (inv) return { title: 'Payment past due', body: `${what} is past due. Please settle it as soon as possible.${thanks}`, payUrl, inv };
+  const verb = many ? 'are' : 'is';
+  if (what && anyLocked) return { title: music ? 'Music locked' : 'Access locked', body: `Access to your ${things} is paused until ${what} ${verb} settled. Please submit payment as soon as possible to restore access.${thanks}`, pays };
+  if (what) return { title: 'Payment past due', body: `${what} ${verb} past due. Please settle ${many ? 'them' : 'it'} as soon as possible.${thanks}`, pays };
   return { title: music ? 'Music locked' : 'Access locked', body: `Access to these ${things} is paused for now. Please contact Sarah Griego to restore access.` };
 }
+const payButtons = (info) => (info.pays || []).map((p) => `<a class="lock-pay" href="${lockEsc(p.url)}" target="_blank" rel="noopener">${lockEsc(p.label)} ↗</a>`).join('');
 function renderLockBanner(client, musician) {
   const el = document.getElementById('lock-banner');
   currentLock = lockInfo(client, musician);
@@ -1712,7 +1721,7 @@ function renderLockBanner(client, musician) {
   const l = client && client.lock;
   if (!currentLock || musician || !(l && l.notice)) { el.hidden = true; el.innerHTML = ''; return; }
   el.innerHTML = `<div class="lk-eyebrow">Account notice</div><h3>${lockEsc(currentLock.title)}</h3><p>${lockEsc(currentLock.body)}</p>`
-    + (currentLock.payUrl ? `<div class="lock-actions"><a class="lock-pay" href="${lockEsc(currentLock.payUrl)}" target="_blank" rel="noopener">Pay Invoice #${lockEsc(currentLock.inv)} ↗</a></div>` : '');
+    + ((currentLock.pays || []).length ? `<div class="lock-actions">${payButtons(currentLock)}</div>` : '');
   el.hidden = false;
 }
 function showLockMessage(e) {
@@ -1720,7 +1729,7 @@ function showLockMessage(e) {
   const info = currentLock || { title: 'Music locked', body: 'This music is locked for now. Please contact Sarah Griego.' };
   document.getElementById('lock-modal-title').textContent = info.title;
   document.getElementById('lock-modal-body').textContent = info.body;
-  document.getElementById('lock-modal-actions').innerHTML = (info.payUrl ? `<a class="lock-pay" href="${lockEsc(info.payUrl)}" target="_blank" rel="noopener">Pay Invoice #${lockEsc(info.inv)} ↗</a>` : '') + '<button type="button" class="lock-ok" onclick="closeLockModal()">Close</button>';
+  document.getElementById('lock-modal-actions').innerHTML = payButtons(info) + '<button type="button" class="lock-ok" onclick="closeLockModal()">Close</button>';
   const m = document.getElementById('lock-modal');
   m.hidden = false;
   const btn = m.querySelector('.lock-pay, .lock-ok'); if (btn) btn.focus();
