@@ -1016,6 +1016,7 @@
 
   /* Music and Projects sides (Oct 29): switched the way the Green Room switches rooms */
   .side-switch{display:flex;gap:0;margin:0 0 18px;border:1px solid var(--gr-line);width:max-content;max-width:100%;}
+  .side-switch[hidden]{display:none;}
   .side-switch button{background:transparent;border:none;color:var(--gr-text);font-family:'Poppins',sans-serif;font-weight:500;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;padding:11px 22px;cursor:pointer;transition:background .25s ease,color .25s ease;}
   .side-switch button.on{background:var(--gr-red);color:#fff;}
   .side-switch button:focus-visible{outline:2px solid var(--gr-gold);outline-offset:2px;}
@@ -1067,6 +1068,29 @@
   footer{background:transparent;border-top:1px solid var(--gr-line);}
   footer strong{color:var(--gr-red);}
   @media (max-width:600px){ header.hero{padding-top:78px;} }
+
+  /* PAST-DUE LOCK (Nov 16, 2026): notice at the top, locked charts, and the popup. */
+  .lock-banner{border:1px solid var(--gr-red,#E3261F);border-left-width:4px;background:rgba(227,38,31,.09);padding:18px 20px;margin:0 0 22px;}
+  .lock-banner[hidden]{display:none;}
+  .lock-banner .lk-eyebrow{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gr-red,#E3261F);font-weight:600;margin-bottom:6px;}
+  .lock-banner h3{margin:0 0 6px;font-weight:600;font-size:1.05rem;color:#FBFAF8;letter-spacing:.01em;}
+  .lock-banner p{margin:0;font-weight:300;font-size:.9rem;line-height:1.6;color:#E6E1D7;}
+  .lock-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+  .lock-pay{display:inline-block;background:var(--gr-red,#E3261F);color:#fff;text-decoration:none;text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;padding:11px 18px;border:0;}
+  .lock-pay:hover{opacity:.88;}
+  .lock-tag{display:inline-flex;align-items:center;gap:5px;margin-left:10px;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gr-red,#E3261F);border:1px solid var(--gr-red,#E3261F);padding:2px 7px;vertical-align:middle;font-weight:600;}
+  .work.is-locked .work-title{color:#BDB7AC;}
+  .locked-btn{font:inherit;cursor:pointer;background:transparent;color:#CFC9BE;border:1px dashed #555;border-radius:0;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;padding:9px 14px;display:inline-flex;align-items:center;gap:6px;}
+  .locked-btn:hover{border-color:var(--gr-red,#E3261F);color:#fff;}
+  .lock-ico{width:12px;height:12px;flex:0 0 auto;}
+  .lock-modal{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .lock-modal[hidden]{display:none;}
+  .lock-card{position:relative;max-width:440px;width:100%;background:var(--gr-card,#141414);border:1px solid var(--gr-line,#2A2A2A);border-top:4px solid var(--gr-red,#E3261F);box-shadow:8px 8px 0 -2px var(--gr-red,#E3261F);padding:26px 24px 22px;color:#EDE8DE;}
+  .lock-card h3{margin:4px 0 8px;font-size:1.15rem;font-weight:600;color:#FBFAF8;}
+  .lock-card p{margin:0;font-weight:300;font-size:.92rem;line-height:1.6;}
+  .lock-close{position:absolute;top:8px;right:10px;background:none;border:0;color:#9A948A;font-size:1.6rem;line-height:1;cursor:pointer;}
+  .lock-close:hover{color:#fff;}
+  .lock-ok{font:inherit;background:transparent;color:#EDE8DE;border:1px solid #3A3A3A;text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;padding:11px 18px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -1153,6 +1177,7 @@
   </header>
 
   <main>
+    <div id="lock-banner" class="lock-banner" role="alert" hidden></div>
     <div class="side-switch" id="side-switch" role="tablist" aria-label="Which side" hidden>
       <button type="button" role="tab" data-side-btn="music" aria-selected="true" class="on" onclick="setSide('music')">Music</button>
       <button type="button" role="tab" data-side-btn="projects" aria-selected="false" onclick="setSide('projects')">Projects</button>
@@ -1647,8 +1672,60 @@ function applyFeed(client, feed) {
   c.commissions = feed.commissions || [];
   c.visits = feed.visits || [];
   c.projects = feed.projects || [];
+  c.lock = feed.lock || null;
   return c;
 }
+
+// ---------- PAST-DUE LOCK (Nov 16) ----------
+// Sarah can post a past-due notice and lock charts from the Green Room. Locked
+// charts arrive with titles only (no links); tapping one shows the message below.
+let currentLock = null;
+const LOCK_ICON = '<svg class="lock-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>';
+const lockEsc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+function lockInfo(client, musician) {
+  const l = client && client.lock;
+  const anyLocked = (client.works || []).some((w) => w.locked);
+  if (!l || (!l.notice && !anyLocked)) return null;
+  if (musician) return anyLocked ? { title: 'Music locked', body: 'These parts and recordings are temporarily unavailable. Please check with your director.' } : null;
+  const pending = ((client.financials || {}).pending) || [];
+  const inv = l.notice ? String(l.invoice || '').replace(/^#/, '') : '';
+  const item = inv ? pending.find((x) => String(x.number || '') === inv || new RegExp('#\\s?' + inv.replace(/[^\w-]/g, '') + '\\b').test(x.sub || '')) : null;
+  const amount = l.amount || (item && item.amount) || '';
+  let payUrl = '';
+  if (inv) {
+    payUrl = window.clientPayUrl || (item && item.payUrl) || l.payUrl || '';
+    if (!payUrl && amount) payUrl = 'https://www.paypal.biz/ParkerCompositions/' + amount.replace(/[^0-9.]/g, '');
+  }
+  const what = inv ? `Invoice #${inv}${amount ? ` (${amount})` : ''}` : '';
+  const thanks = ' If payment is already on its way, thank you, and please let Sarah know.';
+  if (inv && anyLocked) return { title: 'Music locked', body: `Access to your parts and recordings is paused until ${what} is settled. Please submit payment as soon as possible to restore access.${thanks}`, payUrl, inv };
+  if (inv) return { title: 'Payment past due', body: `${what} is past due. Please settle it as soon as possible.${thanks}`, payUrl, inv };
+  return { title: 'Music locked', body: 'Access to these parts and recordings is paused for now. Please contact Sarah Griego to restore access.' };
+}
+function renderLockBanner(client, musician) {
+  const el = document.getElementById('lock-banner');
+  currentLock = lockInfo(client, musician);
+  if (!el) return;
+  const l = client && client.lock;
+  if (!currentLock || musician || !(l && l.notice)) { el.hidden = true; el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="lk-eyebrow">Account notice</div><h3>${lockEsc(currentLock.title)}</h3><p>${lockEsc(currentLock.body)}</p>`
+    + (currentLock.payUrl ? `<div class="lock-actions"><a class="lock-pay" href="${lockEsc(currentLock.payUrl)}" target="_blank" rel="noopener">Pay Invoice #${lockEsc(currentLock.inv)} ↗</a></div>` : '');
+  el.hidden = false;
+}
+function showLockMessage(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  const info = currentLock || { title: 'Music locked', body: 'This music is locked for now. Please contact Sarah Griego.' };
+  document.getElementById('lock-modal-title').textContent = info.title;
+  document.getElementById('lock-modal-body').textContent = info.body;
+  document.getElementById('lock-modal-actions').innerHTML = (info.payUrl ? `<a class="lock-pay" href="${lockEsc(info.payUrl)}" target="_blank" rel="noopener">Pay Invoice #${lockEsc(info.inv)} ↗</a>` : '') + '<button type="button" class="lock-ok" onclick="closeLockModal()">Close</button>';
+  const m = document.getElementById('lock-modal');
+  m.hidden = false;
+  const btn = m.querySelector('.lock-pay, .lock-ok'); if (btn) btn.focus();
+}
+function closeLockModal() { const m = document.getElementById('lock-modal'); if (m) m.hidden = true; }
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLockModal(); });
+const lockedBtn = () => `<button type="button" class="locked-btn" onclick="showLockMessage(event)">${LOCK_ICON}Locked</button>`;
+const lockTag = (work) => (work.locked ? `<span class="lock-tag">${LOCK_ICON}Locked</span>` : '');
 function renderCurrentWork(client) {
   const sec = document.getElementById('current-work-section');
   const list = client.commissions || [];
@@ -1997,10 +2074,10 @@ function renderPortal(client) {
 
   const worksList = document.getElementById('works-list');
   worksList.innerHTML = (client.works || []).map((work, i) => `
-    <div class="work" id="work-${i}">
+    <div class="work${work.locked ? ' is-locked' : ''}" id="work-${i}">
       <div class="work-header" onclick="toggleWork(${i})">
         <div>
-          <div class="work-title">${work.title}</div>
+          <div class="work-title">${work.title}${lockTag(work)}</div>
           ${work.sub ? `<div class="work-sub">${work.sub}</div>` : ''}
         </div>
         <div class="work-toggle">+</div>
@@ -2010,8 +2087,8 @@ function renderPortal(client) {
           <ul class="work-audio">
             ${work.audio.map(track => `
               <li>
-                <div class="audio-head"><div class="audio-title">${track.title}</div><a class="audio-dl" href="${audioDlHref(track.url)}" download rel="noopener">Download ↓</a></div>
-                <audio controls preload="none" src="${track.url}"></audio>
+                <div class="audio-head"><div class="audio-title">${track.title}</div>${work.locked ? lockedBtn() : `<a class="audio-dl" href="${audioDlHref(track.url)}" download rel="noopener">Download ↓</a>`}</div>
+                ${work.locked ? '' : `<audio controls preload="none" src="${track.url}"></audio>`}
               </li>
             `).join('')}
           </ul>
@@ -2023,10 +2100,11 @@ function renderPortal(client) {
                 <div class="part-name">${part.title}</div>
                 ${part.sub ? `<div class="part-sub">${part.sub}</div>` : ''}
               </div>
-              <a class="dl-btn" href="${part.url}" rel="noopener">Download ↓</a>
+              ${work.locked ? lockedBtn() : `<a class="dl-btn" href="${part.url}" rel="noopener">Download ↓</a>`}
             </li>
           `).join('')}
         </ul>
+        ${work.locked ? `<p class="part-sub" style="margin:12px 0 0;">Locked. <a href="#" onclick="showLockMessage(event)" style="color:inherit;">Why?</a></p>` : ''}
         ${work.bundleUrl ? `<a class="bundle-btn-sm" href="${work.bundleUrl}" target="_blank" rel="noopener">Download All (PDFs) — ${work.title} ↓</a>` : ''}
         ${work.bundleUrl ? `<a class="bundle-btn-sm" href="${work.bundleUrl}${work.bundleUrl.indexOf('?') > -1 ? '&' : '?'}type=audio" target="_blank" rel="noopener">Download Audio — ${work.title} ↓</a>` : ''}
       </div>
@@ -2073,6 +2151,7 @@ function renderPortal(client) {
   // musician mini-portal hides it (see renderMusicianPortal).
   document.getElementById('thanks-block').style.display = '';
 
+  renderLockBanner(client, false);
   document.title = `${client.groupName || client.name} — Parker Compositions Portal`;
 }
 
@@ -2147,10 +2226,10 @@ function renderMusicianPortal(client) {
 
   const worksList = document.getElementById('works-list');
   worksList.innerHTML = worksWithAudio.map((work, i) => `
-    <div class="work" id="work-${i}">
+    <div class="work${work.locked ? ' is-locked' : ''}" id="work-${i}">
       <div class="work-header" onclick="toggleWork(${i})">
         <div>
-          <div class="work-title">${work.title}</div>
+          <div class="work-title">${work.title}${lockTag(work)}</div>
           ${work.sub ? `<div class="work-sub">${work.sub}</div>` : ''}
         </div>
         <div class="work-toggle">+</div>
@@ -2159,8 +2238,8 @@ function renderMusicianPortal(client) {
         <ul class="work-audio">
           ${work.audio.map(track => `
             <li>
-              <div class="audio-head"><div class="audio-title">${track.title}</div><a class="audio-dl" href="${audioDlHref(track.url)}" download rel="noopener">Download ↓</a></div>
-              <audio controls preload="none" src="${track.url}"></audio>
+              <div class="audio-head"><div class="audio-title">${track.title}</div>${work.locked ? lockedBtn() : `<a class="audio-dl" href="${audioDlHref(track.url)}" download rel="noopener">Download ↓</a>`}</div>
+              ${work.locked ? '' : `<audio controls preload="none" src="${track.url}"></audio>`}
             </li>
           `).join('')}
         </ul>
@@ -2180,6 +2259,7 @@ function renderMusicianPortal(client) {
   // aren't the ones paying for anything, that message reads oddly here.
   document.getElementById('thanks-block').style.display = 'none';
 
+  renderLockBanner(client, true);
   document.title = `${client.groupName || client.name} — Recordings`;
 }
 
@@ -2480,5 +2560,14 @@ function updatePendingBadge(count) {
   new MutationObserver(function(){ if (current && !document.body.contains(current)) paint(); }).observe(document.body, { childList: true, subtree: true });
 })();
 </script>
+<div id="lock-modal" class="lock-modal" hidden role="dialog" aria-modal="true" aria-labelledby="lock-modal-title" onclick="if (event.target === this) closeLockModal()">
+  <div class="lock-card">
+    <button type="button" class="lock-close" aria-label="Close" onclick="closeLockModal()">&times;</button>
+    <div class="lk-eyebrow" style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gr-red,#E3261F);font-weight:600;">Parker Compositions</div>
+    <h3 id="lock-modal-title"></h3>
+    <p id="lock-modal-body"></p>
+    <div class="lock-actions" id="lock-modal-actions"></div>
+  </div>
+</div>
 </body>
 </html>
