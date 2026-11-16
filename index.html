@@ -1684,7 +1684,10 @@ const LOCK_ICON = '<svg class="lock-ico" viewBox="0 0 24 24" fill="none" stroke=
 const lockEsc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 function lockInfo(client, musician) {
   const l = client && client.lock;
-  const anyLocked = (client.works || []).some((w) => w.locked);
+  const music = (client.works || []).some((w) => w.locked);
+  const work = !musician && (client.commissions || []).some((w) => w.locked);
+  const anyLocked = music || work;
+  const things = music && work ? 'parts, recordings and project files' : work ? 'project files and deliverables' : 'parts and recordings';
   if (!l || (!l.notice && !anyLocked)) return null;
   if (musician) return anyLocked ? { title: 'Music locked', body: 'These parts and recordings are temporarily unavailable. Please check with your director.' } : null;
   const pending = ((client.financials || {}).pending) || [];
@@ -1698,9 +1701,9 @@ function lockInfo(client, musician) {
   }
   const what = inv ? `Invoice #${inv}${amount ? ` (${amount})` : ''}` : '';
   const thanks = ' If payment is already on its way, thank you, and please let Sarah know.';
-  if (inv && anyLocked) return { title: 'Music locked', body: `Access to your parts and recordings is paused until ${what} is settled. Please submit payment as soon as possible to restore access.${thanks}`, payUrl, inv };
+  if (inv && anyLocked) return { title: music ? 'Music locked' : 'Access locked', body: `Access to your ${things} is paused until ${what} is settled. Please submit payment as soon as possible to restore access.${thanks}`, payUrl, inv };
   if (inv) return { title: 'Payment past due', body: `${what} is past due. Please settle it as soon as possible.${thanks}`, payUrl, inv };
-  return { title: 'Music locked', body: 'Access to these parts and recordings is paused for now. Please contact Sarah Griego to restore access.' };
+  return { title: music ? 'Music locked' : 'Access locked', body: `Access to these ${things} is paused for now. Please contact Sarah Griego to restore access.` };
 }
 function renderLockBanner(client, musician) {
   const el = document.getElementById('lock-banner');
@@ -1736,10 +1739,10 @@ function renderCurrentWork(client) {
   const fmtDue = (d) => { const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); };
   document.getElementById('current-work-list').innerHTML = list.map((w) => `
     <li>
-      <div class="cw-top"><div class="cw-title">${esc(w.title)}</div>${w.status ? `<span class="cw-status">${esc(w.status)}</span>` : ''}</div>
+      <div class="cw-top"><div class="cw-title">${esc(w.title)}${w.locked ? `<span class="lock-tag">${LOCK_ICON}Locked</span>` : ''}</div>${w.status ? `<span class="cw-status">${esc(w.status)}</span>` : ''}</div>
       ${w.note ? `<div class="cw-note">${esc(w.note)}</div>` : ''}
       ${w.due ? `<div class="cw-due">Expected ${esc(fmtDue(w.due))}</div>` : ''}
-      ${w.link && /^https:\/\//.test(w.link) ? `<a class="cw-link" href="${esc(w.link)}" target="_blank" rel="noopener">${esc(w.linkLabel || 'Open link')} ↗</a>` : ''}
+      ${w.locked ? `<div style="margin-top:10px;">${lockedBtn()}</div>` : w.link && /^https:\/\//.test(w.link) ? `<a class="cw-link" href="${esc(w.link)}" target="_blank" rel="noopener">${esc(w.linkLabel || 'Open link')} ↗</a>` : ''}
     </li>`).join('');
 }
 // A client Sarah has done both kinds of work for gets two sides: Music (commissions,
